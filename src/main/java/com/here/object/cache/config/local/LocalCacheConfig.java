@@ -3,6 +3,7 @@ package com.here.object.cache.config.local;
 import java.util.concurrent.TimeUnit;
 
 import com.here.object.cache.config.CacheConfig;
+import com.here.object.cache.config.CachingMode;
 
 /**
  * 
@@ -22,6 +23,11 @@ public class LocalCacheConfig implements CacheConfig {
 	 */
 	public long getExpirationInMs() {
 		return expirationInMs;
+	}
+
+	@Override
+	public CachingMode getCachingMode() {
+		return CachingMode.LOCAL_JVM_CACHE;
 	}
 	
 }

@@ -107,4 +107,12 @@ public class RedisCache<T> implements DataCache<T> {
 		
 		return config;
 	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		client.shutdown();
+	}
+	
+	
 }

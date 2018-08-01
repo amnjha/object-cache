@@ -10,7 +10,7 @@ import com.here.object.cache.exceptions.NonUniqueKeyException;
 
 public class LocalCache<T>  implements DataCache<T>{
 	private LocalCacheConfig cacheConfig;
-	private Cache<String, T> localCache = configureLocalCache();
+	private Cache<String, T> localCache;
 	
 	
 	/**
@@ -19,6 +19,7 @@ public class LocalCache<T>  implements DataCache<T>{
 	public LocalCache(LocalCacheConfig cacheConfig) {
 		super();
 		this.cacheConfig = cacheConfig;
+		localCache = configureLocalCache();
 	}
 
 
@@ -56,4 +57,14 @@ public class LocalCache<T>  implements DataCache<T>{
 		localCache.invalidate(key);
 		return t!=null;
 	}
+
+
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		localCache.invalidateAll();
+		localCache.cleanUp();
+	}
+	
+	
 }

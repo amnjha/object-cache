@@ -7,4 +7,5 @@ package com.here.object.cache.config;
  */
 public interface CacheConfig {
 	
+	CachingMode getCachingMode();
 }

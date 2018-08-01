@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.here.object.cache.config.CacheConfig;
+import com.here.object.cache.config.CachingMode;
 import com.here.object.cache.exceptions.InvalidConfigException;
 
 public class RedisCacheConfig implements CacheConfig{
@@ -17,14 +18,16 @@ public class RedisCacheConfig implements CacheConfig{
 	
 	private final List<String> redisServers;
 	private final RedisConnectionType redisConnectionType;
+	private final CachingMode cachingMode;
 	
-	public RedisCacheConfig(ServerAddress...servers) {
+	public RedisCacheConfig(CachingMode cachingMode, ServerAddress...servers) {
 		int serverCount= servers.length;
 		if(serverCount<1) 
 			throw new InvalidConfigException("Atleast one server is required while using the redis caching mode");
 		
 		redisServers = Arrays.stream(servers).map(ServerAddress::getConnectionString).collect(toList());
 		redisConnectionType= serverCount>1?RedisConnectionType.CLUSTER_CONNECTION:RedisConnectionType.SINGLE_SERVER;
+		this.cachingMode= cachingMode;
 	}
 
 	/**
@@ -39,6 +42,11 @@ public class RedisCacheConfig implements CacheConfig{
 	 */
 	public RedisConnectionType getRedisConnectionType() {
 		return redisConnectionType;
+	}
+
+	@Override
+	public CachingMode getCachingMode() {
+		return this.cachingMode;
 	}
 	
 	
