@@ -8,6 +8,11 @@
 	<name>Object Cache</name>
 	<description>Library for caching objects to share between different JVM instances</description>
 
+	<properties>
+		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.target>1.8</maven.compiler.target>
+	</properties>
+
 	<dependencies>
 
 		<!-- Guava for Local Cache within JVM -->
@@ -56,7 +61,16 @@
 			<groupId>com.github.kstyrc</groupId>
 			<artifactId>embedded-redis</artifactId>
 			<version>0.6</version>
+			<scope>test</scope>
 		</dependency>
-		
+
+		<!-- https://mvnrepository.com/artifact/org.mockito/mockito-all -->
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.9.5</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 </project>

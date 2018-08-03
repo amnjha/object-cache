@@ -8,6 +8,12 @@ import com.google.common.cache.CacheBuilder;
 import com.here.object.cache.config.local.LocalCacheConfig;
 import com.here.object.cache.exceptions.NonUniqueKeyException;
 
+/**
+ * 
+ * @author amajha
+ *
+ * @param <T> The datatype that can be held by this class
+ */
 public class LocalCache<T>  implements DataCache<T>{
 	private LocalCacheConfig cacheConfig;
 	private Cache<String, T> localCache;
@@ -57,7 +63,6 @@ public class LocalCache<T>  implements DataCache<T>{
 		localCache.invalidate(key);
 		return t!=null;
 	}
-
 
 	@Override
 	protected void finalize() throws Throwable {

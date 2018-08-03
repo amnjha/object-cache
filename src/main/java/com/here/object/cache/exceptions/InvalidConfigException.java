@@ -1,6 +1,16 @@
 package com.here.object.cache.exceptions;
 
+/**
+ * 
+ * @author amajha
+ *
+ */
 public class InvalidConfigException extends RuntimeException {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * 

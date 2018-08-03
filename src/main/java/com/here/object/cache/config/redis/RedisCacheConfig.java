@@ -9,6 +9,11 @@ import com.here.object.cache.config.CacheConfig;
 import com.here.object.cache.config.CachingMode;
 import com.here.object.cache.exceptions.InvalidConfigException;
 
+/**
+ * 
+ * @author amajha
+ *
+ */
 public class RedisCacheConfig implements CacheConfig{
 	
 	public enum RedisConnectionType{

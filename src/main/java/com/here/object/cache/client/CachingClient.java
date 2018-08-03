@@ -14,6 +14,7 @@ import com.here.object.cache.data.LocalCache;
 import com.here.object.cache.data.RedisCache;
 
 /**
+ * Client class for managing the cache
  * @author amajha
  *
  */
@@ -41,6 +42,10 @@ public class CachingClient<T> {
 		return this.cache;
 	}
 	
+	/**
+	 * This method builds the cache, if not already present and returns it
+	 * @return {@link DataCache} The cache held by this client
+	 */
 	public DataCache<T> getCache(){
 		if(cache==null) {
 			synchronized (clientConfig) {

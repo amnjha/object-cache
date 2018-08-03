@@ -10,6 +10,11 @@ public class NonUniqueKeyException extends RuntimeException {
 	/**
 	 * 
 	 */
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * 
+	 */
 	public NonUniqueKeyException() {
 		super();
 	}

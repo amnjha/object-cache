@@ -1,9 +1,13 @@
 package com.here.object.cache.data;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.redisson.Redisson;
+import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBinaryStream;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
@@ -15,12 +19,20 @@ import com.here.object.cache.exceptions.NonUniqueKeyException;
 import com.here.object.cache.exceptions.ObjectNotSerialzableException;
 import com.here.object.cache.serializer.ByteSerializer;
 
+/**
+ * 
+ * @author amajha
+ *
+ * @param <T> The datatype that can be held within this cache
+ */
 public class RedisCache<T> implements DataCache<T> {
 
 	private LocalCache<T> localCache;
 	private RedisCacheConfig cacheConfig;
 	private RedissonClient client;
 	private Config redissonConfig;
+	private static Map<String, RedissonClient> clientHolder= new HashMap<>();
+	private static final String SHARED_COUNTER="SHARED_COUNTER";
 	
 	/**
 	 * @param cacheConfig
@@ -29,7 +41,7 @@ public class RedisCache<T> implements DataCache<T> {
 		super();
 		this.cacheConfig = cacheConfig;
 		redissonConfig= generateRedissonConfig();
-		client= Redisson.create(redissonConfig);
+		client= buildRedissonClient();
 		
 		this.localCache= new LocalCache<>(new LocalCacheConfig(7, TimeUnit.DAYS));
 	}
@@ -66,7 +78,7 @@ public class RedisCache<T> implements DataCache<T> {
 		// if not found, look in the remote cache
 		RBinaryStream binStream= client.getBinaryStream(key);	
 		if(binStream.isExists())
-			return ByteSerializer.deserizalize(binStream.get());
+			return ByteSerializer.deserialize(binStream.get());
 		
 		return null;
 	}
@@ -96,23 +108,51 @@ public class RedisCache<T> implements DataCache<T> {
 		RBinaryStream binStream= client.getBinaryStream(key);
 		return binStream.delete();
 	}
+	
+	@Override
+	public AtomicCounter getSharedAtomicCounter() {
+		RAtomicLong counterValue = client.getAtomicLong(RedisCache.SHARED_COUNTER);
+		AtomicCounter counter = new AtomicCounter(counterValue);
+		return counter;
+	}
 
 	private Config generateRedissonConfig() {
 		Config config= new Config();
 		
-		if(cacheConfig.getRedisConnectionType().equals(RedisConnectionType.SINGLE_SERVER))
+		if(cacheConfig.getRedisConnectionType().equals(RedisConnectionType.SINGLE_SERVER)) {
 			config.useSingleServer().setAddress(cacheConfig.getRedisServers().get(0));
-		else
-			config.useClusterServers().addNodeAddress((String[]) cacheConfig.getRedisServers().toArray());		
-		
+			config.useSingleServer().setRetryAttempts(Integer.MAX_VALUE);
+	        config.useSingleServer().setTimeout(10000);
+	        config.useSingleServer().setConnectionPoolSize(50);
+	        config.useSingleServer().setRetryInterval(2000);
+		}
+		else {
+			config.useClusterServers().addNodeAddress((String[]) cacheConfig.getRedisServers().toArray());
+			config.useClusterServers().setRetryAttempts(Integer.MAX_VALUE);
+	        config.useClusterServers().setTimeout(10000);
+	        config.useClusterServers().setMasterConnectionPoolSize(50);
+	        config.useClusterServers().setRetryInterval(2000);
+		}
+        
 		return config;
 	}
 
+	private RedissonClient buildRedissonClient() {
+		String clientKey= this.cacheConfig.getRedisServers().stream().collect(Collectors.joining(";;"));
+		RedissonClient client= clientHolder.get(clientKey);
+		if(client!=null && client.getNodesGroup().pingAll()) 
+			return client;
+		else {
+			client= Redisson.create(this.redissonConfig);
+			clientHolder.put(clientKey, client);
+			return client;
+		}
+	}
+	
 	@Override
 	protected void finalize() throws Throwable {
 		super.finalize();
 		client.shutdown();
 	}
-	
 	
 }

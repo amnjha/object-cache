@@ -1,5 +1,10 @@
 package com.here.object.cache.config.redis;
 
+/**
+ * 
+ * @author amajha
+ *
+ */
 public class ServerAddress{
 	private String host;
 	private int port;

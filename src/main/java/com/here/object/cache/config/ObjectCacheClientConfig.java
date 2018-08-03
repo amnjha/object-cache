@@ -13,6 +13,11 @@ import com.here.object.cache.config.local.LocalCacheConfig;
 import com.here.object.cache.config.redis.RedisCacheConfig;
 import com.here.object.cache.config.redis.ServerAddress;
 
+/**
+ * 
+ * @author amajha
+ *
+ */
 public class ObjectCacheClientConfig {
 	private final CachingMode cachingMode;
 	private final CacheConfig cacheConfig;
@@ -32,7 +37,7 @@ public class ObjectCacheClientConfig {
 		cacheConfig = new RedisCacheConfig(CachingMode.STAND_ALONE_REDIS_CACHE, addresses);
 	}
 
-	public ObjectCacheClientConfig(AmazonElastiCacheClient client, String cacheClusterId) {
+	public ObjectCacheClientConfig(AmazonElastiCacheClient client, String cacheClusterId, boolean useSSL) {
 		cachingMode = CachingMode.AWS_ELASTICACHE;
 
 		DescribeCacheClustersRequest dccRequest = new DescribeCacheClustersRequest().withCacheClusterId(cacheClusterId);
@@ -45,7 +50,7 @@ public class ObjectCacheClientConfig {
 		if (cacheCluster != null)
 		{	
 			addresses = cacheCluster.getCacheNodes().stream().map(CacheNode::getEndpoint)
-					.map(e -> new ServerAddress(e.getAddress(), e.getPort(), true)).collect(Collectors.toList())
+					.map(e -> new ServerAddress(e.getAddress(), e.getPort(), useSSL)).collect(Collectors.toList())
 					.toArray(new ServerAddress[] {});
 			cacheConfig= new RedisCacheConfig(CachingMode.AWS_ELASTICACHE, addresses);
 		}
