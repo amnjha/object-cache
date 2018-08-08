@@ -10,7 +10,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import com.amazonaws.services.elasticache.AmazonElastiCache;
 import com.amazonaws.services.elasticache.AmazonElastiCacheClient;
 import com.amazonaws.services.elasticache.model.CacheCluster;
 import com.amazonaws.services.elasticache.model.CacheNode;
