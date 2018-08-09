@@ -1,14 +1,20 @@
 package com.here.object.cache.data;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.redisson.Redisson;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBinaryStream;
+import org.redisson.api.RList;
+import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
@@ -115,6 +121,56 @@ public class RedisCache<T> implements DataCache<T> {
 		AtomicCounter counter = new AtomicCounter(counterValue);
 		return counter;
 	}
+	
+	
+
+	@Override
+	public boolean addToList(String listName, T value) {
+		RList<T> valueList= client.getList(listName);
+		return valueList.add(value);
+	}
+	
+	@Override
+	public boolean removeFromList(String listName, T value) {
+		RList<T> valueList= client.getList(listName);
+		return valueList.remove(value);
+	}
+	
+	@Override
+	public List<T> getList(String listName){
+		RList<T> valueList = client.getList(listName);
+		return valueList.stream().collect(Collectors.toList());
+	}
+
+	@Override
+	public boolean addAllToList(String listName, Collection<T> t) {
+		RList<T> valueList= client.getList(listName);
+		return valueList.addAll(t);
+	}
+	
+	@Override
+	public boolean addToSet(String setName, T value) {
+		RSet<T> valueList= client.getSet(setName);
+		return valueList.add(value);
+	}
+	
+	@Override
+	public boolean removeFromSet(String setName, T value) {
+		RSet<T> valueList= client.getSet(setName);
+		return valueList.remove(value);
+	}
+	
+	@Override
+	public Set<T> getSet(String setName){
+		RSet<T> valueList = client.getSet(setName);
+		return valueList.stream().collect(Collectors.toSet());
+	}
+
+	@Override
+	public boolean addAllToSet(String setName, Collection<T> t) {
+		RSet<T> valueList= client.getSet(setName);
+		return valueList.addAll(t);
+	}
 
 	private Config generateRedissonConfig() {
 		Config config= new Config();
@@ -138,7 +194,7 @@ public class RedisCache<T> implements DataCache<T> {
 	}
 
 	private RedissonClient buildRedissonClient() {
-		String clientKey= this.cacheConfig.getRedisServers().stream().collect(Collectors.joining(";;"));
+		String clientKey= this.cacheConfig.getRedisServers().stream().sorted().collect(Collectors.joining(";;"));
 		RedissonClient client= clientHolder.get(clientKey);
 		if(client!=null && client.getNodesGroup().pingAll()) 
 			return client;
