@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.cache.Cache;
@@ -37,11 +39,19 @@ public class LocalCache<T>  implements DataCache<T>{
 
 
 	private Cache<String, T> configureLocalCache() {
-		return CacheBuilder.newBuilder().expireAfterWrite(cacheConfig.getExpirationInMs(), TimeUnit.MILLISECONDS).build();
+		return CacheBuilder.
+				newBuilder().
+				expireAfterWrite(cacheConfig.getExpirationInMs(), TimeUnit.MILLISECONDS).
+				maximumSize(cacheConfig.getCacheSize()).
+				build();
 	}
 	
 	private Cache<String, Collection<T>> configureCollectionCache(){
-		return CacheBuilder.newBuilder().expireAfterWrite(cacheConfig.getExpirationInMs(), TimeUnit.MILLISECONDS).build();
+		return CacheBuilder.
+				newBuilder().
+				expireAfterWrite(cacheConfig.getExpirationInMs(), TimeUnit.MILLISECONDS).
+				maximumSize(cacheConfig.getCacheSize()).
+				build();
 	}
 
 
@@ -74,116 +84,38 @@ public class LocalCache<T>  implements DataCache<T>{
 		localCache.invalidate(key);
 		return t!=null;
 	}
-	
-	
-
-	@Override
-	public boolean addToList(String listName, T value) {
-		Collection<T> coll = collectionLocalCache.getIfPresent(listName);
-		if(coll==null) {
-			coll = new ArrayList<>();
-		}
-		else if(!(coll instanceof List)) {
-			throw new RuntimeException("given key is not a list");
-		}
-		
-		return coll.add(value);
-	}
-
 
 	@Override
 	public List<T> getList(String listName) {
 		Collection<T> coll = collectionLocalCache.getIfPresent(listName);
-		if(coll ==null)
-			return null;
-		
+		if(coll ==null) {
+			List<T> t= new CopyOnWriteArrayList<>();
+			collectionLocalCache.put(listName, t);
+			return t;
+		}
+
 		if(!(coll instanceof List)) {
 			throw new RuntimeException("given key is not a list");
+		}else{
+			return (List<T>)coll;
 		}
-		
-		return new ArrayList<>(coll);
-	}
-
-
-	@Override
-	public boolean addAllToList(String listName, Collection<T> t) {
-		Collection<T> coll = collectionLocalCache.getIfPresent(listName);
-		
-		if(coll==null) {
-			coll = new ArrayList<>();
-		}
-		
-		else if(!(coll instanceof List)) {
-			throw new RuntimeException("given key is not a list");
-		}
-		
-		return coll.addAll(t);
-	}
-
-
-	@Override
-	public boolean addToSet(String setName, T value) {
-		Collection<T> coll = collectionLocalCache.getIfPresent(setName);
-		if(coll==null) {
-			coll = new HashSet<>();
-		}
-		
-		else if(!(coll instanceof Set)) {
-			throw new RuntimeException("given key is not a set");
-		}
-		
-		return coll.add(value);
 	}
 
 
 	@Override
 	public Set<T> getSet(String setName) {
 		Collection<T> coll = collectionLocalCache.getIfPresent(setName);
-		if(coll==null) 
-			return null;
-		
-		if(!(coll instanceof Set)) {
-			throw new RuntimeException("given key is not a set");
-		}
-		
-		return new HashSet<>(coll);
-	}
-
-
-	@Override
-	public boolean addAllToSet(String setName, Collection<T> t) {
-		Collection<T> coll = collectionLocalCache.getIfPresent(setName);
 		if(coll==null) {
-			coll = new HashSet<>();
+			Set<T> t= new CopyOnWriteArraySet<>();
+			collectionLocalCache.put(setName, t);
+			return t;
 		}
 		
-		else if(!(coll instanceof Set)) {
-			throw new RuntimeException("given key is not a set");
-		}
-		
-		return coll.addAll(t);
-	}
-
-
-	@Override
-	public boolean removeFromSet(String setName, T value) {
-		Collection<T> coll = collectionLocalCache.getIfPresent(setName);
 		if(!(coll instanceof Set)) {
 			throw new RuntimeException("given key is not a set");
+		}else{
+			return (Set<T>) coll;
 		}
-		
-		return coll.remove(value);
-	}
-
-
-	@Override
-	public boolean removeFromList(String listName, T value) {
-		Collection<T> coll = collectionLocalCache.getIfPresent(value);
-		if(!(coll instanceof List)) {
-			throw new RuntimeException("given key is not a list");
-		}
-		
-		return coll.remove(value);
 	}
 
 

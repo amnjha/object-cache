@@ -57,83 +57,22 @@ public interface DataCache<T> {
 	public default AtomicCounter getSharedAtomicCounter() {
 		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
 	}
-	
-	/**
-	 * Creates a new list if not already present, using the given name and adds the element to the queue
-	 * @param listName {@link String}
-	 * @param value The value to be stored
-	 */
-	public default boolean addToList(String listName, T value) {
-		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
-	}
 
 	/**
-	 * Remove the given element from the list
-	 * @param setName {@link String} The Name of the list from which the element would be removed
-	 * @param value The value to be removed
-	 * @return
-	 */
-	public default boolean removeFromList(String listName, T value) {
-		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
-	}
-	
-	/**
-	 * Get all elements of the list
-	 * <b>Note: </b> changes made to the returned list does not impact the original list
-	 * @param listName the list name to get
-	 * @return
-	 */
-	public default List<T> getList(String listName){
-		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
-	}
-
-	/**
-	 * Add all element of the collection to a list in the cache
-	 * @param listName {@link String} The name of the list to which the value must be added
-	 * @param t the Value to be added
-	 * @return whether the operation was successful or not
-	 */
-	public default boolean addAllToList(String listName, Collection<T> t){
-		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
-	}
-
-	/**
-	 * Creates a new set if not already present, using the given name and adds the element to the queue
-	 * @param listName {@link String}
-	 * @param value The value to be stored
-	 */
-	public default boolean addToSet(String setName, T value){
-		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
-	}
-
-	/** 
-	 * Get all elements of the set
-	 * <b>Note: </b> changes made to the returned list does not impact the original list
-	 * @param listName the list name to get
-	 * @return
+	 * Creates a new set if not already present on the cache and returns the new/existing set
+	 * @param setName the name against which the set is stored in the cache
+	 * @return List of T
 	 */
 	public default Set<T> getSet(String setName){
 		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
 	}
 
 	/**
-	 * Add all element of the collection to a set in the cache
-	 * @param listName {@link String} The name of the set to which the value must be added
-	 * @param t the Value to be added
-	 * @return whether the operation was successful or not
+	 * Creates a new list if not already present on the cache and returns the new/existing list
+	 * @param listName the name against which the list is stored in the cache
+	 * @return List of T
 	 */
-	public default boolean addAllToSet(String setName, Collection<T> t){
+	public default List<T> getList(String listName){
 		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
 	}
-
-	/**
-	 * Remove the given element from the set
-	 * @param setName {@link String} The Name of the set from which the element would be removed
-	 * @param value The value to be removed
-	 * @return
-	 */
-	public default boolean removeFromSet(String setName, T value) {
-		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
-	}
-
 }

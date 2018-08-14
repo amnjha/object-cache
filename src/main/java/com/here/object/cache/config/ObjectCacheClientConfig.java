@@ -26,17 +26,44 @@ public class ObjectCacheClientConfig {
 		cachingMode = CachingMode.LOCAL_JVM_CACHE;
 		cacheConfig= new LocalCacheConfig(7, TimeUnit.DAYS);
 	}
-	
+
+	/**
+	 *
+	 * @param expiration
+	 * @param timeUnit
+	 */
 	public ObjectCacheClientConfig(long expiration, TimeUnit timeUnit) {
 		cachingMode = CachingMode.LOCAL_JVM_CACHE;
 		cacheConfig= new LocalCacheConfig(expiration, timeUnit);
 	}
 
+	/**
+	 *
+	 * @param addresses
+	 */
 	public ObjectCacheClientConfig(ServerAddress... addresses) {
 		cachingMode = CachingMode.STAND_ALONE_REDIS_CACHE;
 		cacheConfig = new RedisCacheConfig(CachingMode.STAND_ALONE_REDIS_CACHE, addresses);
 	}
 
+	/**
+	 *
+	 * @return
+	 */
+	public RedisCacheConfig useRedisCache(){
+		if(this.cacheConfig instanceof RedisCacheConfig){
+			return (RedisCacheConfig) this.cacheConfig;
+		}else{
+			throw new RuntimeException("Redis configuration not available, current caching mode: "+ this.cachingMode);
+		}
+	}
+
+	/**
+	 *
+	 * @param client
+	 * @param cacheClusterId
+	 * @param useSSL
+	 */
 	public ObjectCacheClientConfig(AmazonElastiCacheClient client, String cacheClusterId, boolean useSSL) {
 		cachingMode = CachingMode.AWS_ELASTICACHE;
 

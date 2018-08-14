@@ -31,14 +31,14 @@ public class CachingClientTest {
 	
 	@BeforeClass
 	public static void setUp() throws Exception {
-		redisServer= new RedisServer(redisServerPort);
-		redisServer.start();
+		//redisServer= new RedisServer(redisServerPort);
+		//redisServer.start();
 	}
 
 	@AfterClass
 	public static void tearDown() throws Exception {
-		redisServer.stop();
-		redisServer=null;
+		//redisServer.stop();
+		//redisServer=null;
 	}
 	
 	@Test
@@ -71,6 +71,8 @@ public class CachingClientTest {
 		testMap.put("key1", "value1");
 		
 		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig(new ServerAddress("localhost", redisServerPort, false));
+		clientConfig.useRedisCache().withLocalCache();
+
 		CachingClient<Map<String, String>> cacheClient = new CachingClient<>(clientConfig);
 		
 		DataCache<Map<String, String>> cache = cacheClient.getCache();
@@ -100,6 +102,8 @@ public class CachingClientTest {
 		String key="key";
 		
 		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig(new ServerAddress("localhost", redisServerPort, false));
+		clientConfig.useRedisCache().withLocalCache();
+
 		CachingClient<String> cacheClient = new CachingClient<>(clientConfig);
 		
 		DataCache<String> cache = cacheClient.getCache();
@@ -141,6 +145,8 @@ public class CachingClientTest {
          				 					.withPort(redisServerPort)))));
 		 
 		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig(amazonElastiCacheClient, "sampleCacheOneLogical", false);
+		clientConfig.useRedisCache().withLocalCache();
+
 		CachingClient<String> cacheClient = new CachingClient<>(clientConfig);
 		
 		DataCache<String> cache = cacheClient.getCache();

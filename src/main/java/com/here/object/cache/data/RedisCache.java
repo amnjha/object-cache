@@ -10,6 +10,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.here.object.cache.data.collections.CacheList;
+import com.here.object.cache.data.collections.CacheSet;
 import org.redisson.Redisson;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBinaryStream;
@@ -48,8 +50,9 @@ public class RedisCache<T> implements DataCache<T> {
 		this.cacheConfig = cacheConfig;
 		redissonConfig= generateRedissonConfig();
 		client= buildRedissonClient();
-		
-		this.localCache= new LocalCache<>(new LocalCacheConfig(7, TimeUnit.DAYS));
+
+		if(this.cacheConfig.isEnableLocalCaching())
+			this.localCache= new LocalCache<>(new LocalCacheConfig(cacheConfig.getLocalCacheSize(), 7, TimeUnit.DAYS));
 	}
 
 	@Override
@@ -58,7 +61,8 @@ public class RedisCache<T> implements DataCache<T> {
 			throw new ObjectNotSerialzableException("Non-Serializable objects cannot be stored on Redis");
 		
 		// Store in the local cache
-		localCache.store(key, t);
+		if(this.cacheConfig.isEnableLocalCaching())
+			localCache.store(key, t);
 		
 		//Store in the remote cache
 		RBinaryStream binStream= client.getBinaryStream(key);
@@ -73,12 +77,14 @@ public class RedisCache<T> implements DataCache<T> {
 	public T get(String key) {
 		
 		//Check whether it exists in local cache
-		T t = localCache.get(key);
-		if(t!=null) {
-			//if found in local cache, validate if it still exists in the remote cache
-			RBinaryStream binStream= client.getBinaryStream(key);	
-			if(binStream.isExists())
-				return t;  
+		if(this.cacheConfig.isEnableLocalCaching()) {
+			T t = localCache.get(key);
+			if (t != null) {
+				//if found in local cache, validate if it still exists in the remote cache
+				RBinaryStream binStream = client.getBinaryStream(key);
+				if (binStream.isExists())
+					return t;
+			}
 		}
 		
 		// if not found, look in the remote cache
@@ -95,7 +101,8 @@ public class RedisCache<T> implements DataCache<T> {
 			throw new ObjectNotSerialzableException("Non-Serializable objects cannot be stored on Redis");
 		
 		//Replace in the local cache
-		localCache.replace(key, t);
+		if(this.cacheConfig.isEnableLocalCaching())
+			localCache.replace(key, t);
 		
 		//Replace in the remote cache
 		RBinaryStream binStream= client.getBinaryStream(key);
@@ -108,7 +115,8 @@ public class RedisCache<T> implements DataCache<T> {
 	public boolean deleteIfPresent(String key) {
 		
 		//delete from local cache
-		localCache.deleteIfPresent(key);
+		if(this.cacheConfig.isEnableLocalCaching())
+			localCache.deleteIfPresent(key);
 		
 		//delete from remote cache as well
 		RBinaryStream binStream= client.getBinaryStream(key);
@@ -121,55 +129,29 @@ public class RedisCache<T> implements DataCache<T> {
 		AtomicCounter counter = new AtomicCounter(counterValue);
 		return counter;
 	}
-	
-	
 
+	/**
+	 * Creates a new set if not already present on the cache and returns the new/existing set
+	 *
+	 * @param setName the name against which the set is stored in the cache
+	 * @return List of T
+	 */
 	@Override
-	public boolean addToList(String listName, T value) {
-		RList<T> valueList= client.getList(listName);
-		return valueList.add(value);
-	}
-	
-	@Override
-	public boolean removeFromList(String listName, T value) {
-		RList<T> valueList= client.getList(listName);
-		return valueList.remove(value);
-	}
-	
-	@Override
-	public List<T> getList(String listName){
-		RList<T> valueList = client.getList(listName);
-		return valueList.stream().collect(Collectors.toList());
+	public Set<T> getSet(String setName) {
+		Set<T> set = new CacheSet<>(client.getSet(setName));
+		return set;
 	}
 
+	/**
+	 * Creates a new list if not already present on the cache and returns the new/existing list
+	 *
+	 * @param listName the name against which the list is stored in the cache
+	 * @return List of T
+	 */
 	@Override
-	public boolean addAllToList(String listName, Collection<T> t) {
-		RList<T> valueList= client.getList(listName);
-		return valueList.addAll(t);
-	}
-	
-	@Override
-	public boolean addToSet(String setName, T value) {
-		RSet<T> valueList= client.getSet(setName);
-		return valueList.add(value);
-	}
-	
-	@Override
-	public boolean removeFromSet(String setName, T value) {
-		RSet<T> valueList= client.getSet(setName);
-		return valueList.remove(value);
-	}
-	
-	@Override
-	public Set<T> getSet(String setName){
-		RSet<T> valueList = client.getSet(setName);
-		return valueList.stream().collect(Collectors.toSet());
-	}
-
-	@Override
-	public boolean addAllToSet(String setName, Collection<T> t) {
-		RSet<T> valueList= client.getSet(setName);
-		return valueList.addAll(t);
+	public List<T> getList(String listName) {
+		List<T> list = new CacheList<>(client.getList(listName));
+		return list;
 	}
 
 	private Config generateRedissonConfig() {
