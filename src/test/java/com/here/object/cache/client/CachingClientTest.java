@@ -31,14 +31,14 @@ public class CachingClientTest {
 	
 	@BeforeClass
 	public static void setUp() throws Exception {
-		//redisServer= new RedisServer(redisServerPort);
-		//redisServer.start();
+		redisServer= new RedisServer(redisServerPort);
+		redisServer.start();
 	}
 
 	@AfterClass
 	public static void tearDown() throws Exception {
-		//redisServer.stop();
-		//redisServer=null;
+		redisServer.stop();
+		redisServer=null;
 	}
 	
 	@Test
