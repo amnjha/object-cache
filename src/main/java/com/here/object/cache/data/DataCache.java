@@ -54,7 +54,7 @@ public interface DataCache<T> {
 	 * Get Atomic Counter shared through the cache
 	 * @return
 	 */
-	public default AtomicCounter getSharedAtomicCounter() {
+	public default AtomicCounter getSharedAtomicCounter(String counterName) {
 		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
 	}
 

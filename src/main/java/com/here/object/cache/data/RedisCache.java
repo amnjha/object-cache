@@ -124,8 +124,8 @@ public class RedisCache<T> implements DataCache<T> {
 	}
 	
 	@Override
-	public AtomicCounter getSharedAtomicCounter() {
-		RAtomicLong counterValue = client.getAtomicLong(RedisCache.SHARED_COUNTER);
+	public AtomicCounter getSharedAtomicCounter(String counterName) {
+		RAtomicLong counterValue = client.getAtomicLong(counterName+RedisCache.SHARED_COUNTER);
 		AtomicCounter counter = new AtomicCounter(counterValue);
 		return counter;
 	}
