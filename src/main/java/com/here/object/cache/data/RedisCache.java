@@ -13,11 +13,7 @@ import java.util.stream.Collectors;
 import com.here.object.cache.data.collections.CacheList;
 import com.here.object.cache.data.collections.CacheSet;
 import org.redisson.Redisson;
-import org.redisson.api.RAtomicLong;
-import org.redisson.api.RBinaryStream;
-import org.redisson.api.RList;
-import org.redisson.api.RSet;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.config.Config;
 
 import com.here.object.cache.config.local.LocalCacheConfig;
@@ -152,6 +148,34 @@ public class RedisCache<T> implements DataCache<T> {
 	public List<T> getList(String listName) {
 		List<T> list = new CacheList<>(client.getList(listName));
 		return list;
+	}
+
+	@Override
+	public List<String> getAllKeys(){
+		RKeys keys= client.getKeys();
+		List<String> keyList = new ArrayList<>();
+		keys.getKeys().forEach(keyList::add);
+		return keyList;
+	}
+
+	@Override
+	public List<String> getKeyListByPattern(String keyPattern){
+		RKeys keys= client.getKeys();
+		List<String> keyList = new ArrayList<>();
+		keys.getKeysByPattern(keyPattern).forEach(keyList::add);
+		return keyList;
+	}
+
+	@Override
+	public long deleteByKeyPattern(String keyPattern){
+		RKeys keys= client.getKeys();
+		return keys.deleteByPattern(keyPattern);
+	}
+
+	@Override
+	public long deleteByKeys(String...keys){
+		RKeys key= client.getKeys();
+		return key.delete(keys);
 	}
 
 	private Config generateRedissonConfig() {

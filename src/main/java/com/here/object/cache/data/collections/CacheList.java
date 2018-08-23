@@ -43,7 +43,7 @@ public class CacheList<E> extends AbstractList<E> {
      */
     @Override
     public boolean add(E e) {
-        return super.add(e);
+        return list.add(e);
     }
 
     /**
@@ -55,7 +55,7 @@ public class CacheList<E> extends AbstractList<E> {
      */
     @Override
     public E set(int index, E element) {
-        return super.set(index, element);
+        return list.set(index, element);
     }
 
     /**
@@ -66,7 +66,7 @@ public class CacheList<E> extends AbstractList<E> {
      */
     @Override
     public void add(int index, E element) {
-        super.add(index, element);
+        list.add(index, element);
     }
 
     /**
@@ -77,7 +77,7 @@ public class CacheList<E> extends AbstractList<E> {
      */
     @Override
     public E remove(int index) {
-        return super.remove(index);
+        return list.remove(index);
     }
 
     /**
@@ -86,7 +86,7 @@ public class CacheList<E> extends AbstractList<E> {
      */
     @Override
     public void clear() {
-        super.clear();
+        list.clear();
     }
 
     /**

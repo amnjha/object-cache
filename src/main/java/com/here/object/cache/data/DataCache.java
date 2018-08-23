@@ -75,4 +75,12 @@ public interface DataCache<T> {
 	public default List<T> getList(String listName){
 		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
 	}
+
+    List<String> getAllKeys();
+
+    List<String> getKeyListByPattern(String keyPattern);
+
+    long deleteByKeyPattern(String keyPattern);
+
+    long deleteByKeys(String... keys);
 }

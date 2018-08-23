@@ -69,6 +69,7 @@ public class ObjectCacheClientConfig {
 
 		DescribeCacheClustersRequest dccRequest = new DescribeCacheClustersRequest().withCacheClusterId(cacheClusterId);
 		dccRequest.setShowCacheNodeInfo(true);
+		System.out.println("Describe Cache cluster for cluster id: "+cacheClusterId);
 		DescribeCacheClustersResult clusterResult = client.describeCacheClusters(dccRequest);
 		List<CacheCluster> cacheClusters = clusterResult.getCacheClusters();
 

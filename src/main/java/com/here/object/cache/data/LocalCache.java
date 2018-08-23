@@ -1,14 +1,11 @@
 package com.here.object.cache.data;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -101,6 +98,40 @@ public class LocalCache<T>  implements DataCache<T>{
 		}
 	}
 
+	@Override
+	public List<String> getAllKeys() {
+		List<String> keys = new ArrayList<>();
+		keys.addAll(localCache.asMap().keySet());
+		keys.addAll(collectionLocalCache.asMap().keySet());
+		return keys;
+	}
+
+	@Override
+	public List<String> getKeyListByPattern(String keyPattern) {
+		throw new RuntimeException("Method not supported on local cache");
+	}
+
+	@Override
+	public long deleteByKeyPattern(String keyPattern) {
+		return 0;
+	}
+
+
+	@Override
+	public long deleteByKeys(String... keys) {
+		long deleteCount=0;
+		for(String key: keys){
+			T t= localCache.getIfPresent(key);
+			if(t!=null){
+				localCache.invalidate(key);
+				deleteCount++;
+			}else if(collectionLocalCache.getIfPresent(key)!=null){
+				collectionLocalCache.invalidate(key);
+				deleteCount++;
+			}
+		}
+		return deleteCount;
+	}
 
 	@Override
 	public Set<T> getSet(String setName) {
