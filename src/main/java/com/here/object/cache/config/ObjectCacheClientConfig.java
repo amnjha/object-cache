@@ -47,6 +47,17 @@ public class ObjectCacheClientConfig {
 	}
 
 	/**
+	 * @param globalTTL
+	 * @param timeUnit
+	 * @param addresses
+	 */
+	public ObjectCacheClientConfig(long globalTTL, TimeUnit timeUnit, ServerAddress... addresses) {
+		cachingMode = CachingMode.STAND_ALONE_REDIS_CACHE;
+		cacheConfig = new RedisCacheConfig(CachingMode.STAND_ALONE_REDIS_CACHE, addresses);
+		((RedisCacheConfig) cacheConfig).withTTL(globalTTL, timeUnit);
+	}
+
+	/**
 	 *
 	 * @return
 	 */
@@ -81,6 +92,38 @@ public class ObjectCacheClientConfig {
 					.map(e -> new ServerAddress(e.getAddress(), e.getPort(), useSSL)).collect(Collectors.toList())
 					.toArray(new ServerAddress[] {});
 			cacheConfig= new RedisCacheConfig(CachingMode.AWS_ELASTICACHE, addresses);
+		}
+		else {
+			cacheConfig=null;
+		}
+	}
+
+	/**
+	 *
+	 * @param client
+	 * @param cacheClusterId
+	 * @param useSSL
+	 * @param globalTTL
+	 * @param timeUnit
+	 */
+	public ObjectCacheClientConfig(AmazonElastiCacheClient client, String cacheClusterId, boolean useSSL, long globalTTL, TimeUnit timeUnit) {
+		cachingMode = CachingMode.AWS_ELASTICACHE;
+
+		DescribeCacheClustersRequest dccRequest = new DescribeCacheClustersRequest().withCacheClusterId(cacheClusterId);
+		dccRequest.setShowCacheNodeInfo(true);
+		System.out.println("Describe Cache cluster for cluster id: "+cacheClusterId);
+		DescribeCacheClustersResult clusterResult = client.describeCacheClusters(dccRequest);
+		List<CacheCluster> cacheClusters = clusterResult.getCacheClusters();
+
+		CacheCluster cacheCluster = cacheClusters.get(0);
+		ServerAddress[] addresses;
+		if (cacheCluster != null)
+		{
+			addresses = cacheCluster.getCacheNodes().stream().map(CacheNode::getEndpoint)
+					.map(e -> new ServerAddress(e.getAddress(), e.getPort(), useSSL)).collect(Collectors.toList())
+					.toArray(new ServerAddress[] {});
+			cacheConfig= new RedisCacheConfig(CachingMode.AWS_ELASTICACHE, addresses);
+			((RedisCacheConfig) cacheConfig).withTTL(globalTTL, timeUnit);
 		}
 		else {
 			cacheConfig=null;

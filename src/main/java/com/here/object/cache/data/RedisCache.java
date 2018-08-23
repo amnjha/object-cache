@@ -37,6 +37,7 @@ public class RedisCache<T> implements DataCache<T> {
 	private Config redissonConfig;
 	private static Map<String, RedissonClient> clientHolder= new HashMap<>();
 	private static final String SHARED_COUNTER="SHARED_COUNTER";
+	private long timeToLive =0;
 	
 	/**
 	 * @param cacheConfig
@@ -49,6 +50,9 @@ public class RedisCache<T> implements DataCache<T> {
 
 		if(this.cacheConfig.isEnableLocalCaching())
 			this.localCache= new LocalCache<>(new LocalCacheConfig(cacheConfig.getLocalCacheSize(), 7, TimeUnit.DAYS));
+		if(this.cacheConfig.getExpirationInMs()!=0){
+			this.timeToLive= this.cacheConfig.getExpirationInMs();
+		}
 	}
 
 	@Override
@@ -65,7 +69,28 @@ public class RedisCache<T> implements DataCache<T> {
 		if(binStream.isExists())
 			throw new NonUniqueKeyException("Key : "+key +" already present in the cache, to replace the value, use DataCache::replace() instead.");
 		
-		binStream.set(ByteSerializer.serialize((Serializable) t));
+		if(timeToLive!=0)
+			binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, TimeUnit.MILLISECONDS);
+		else
+			binStream.set(ByteSerializer.serialize((Serializable) t));
+		return null;
+	}
+
+	@Override
+	public T store(String key, T t, long timeToLive, TimeUnit timeUnit) {
+		if(!(t instanceof Serializable))
+			throw new ObjectNotSerialzableException("Non-Serializable objects cannot be stored on Redis");
+
+		// Store in the local cache
+		if(this.cacheConfig.isEnableLocalCaching())
+			localCache.store(key, t);
+
+		//Store in the remote cache
+		RBinaryStream binStream= client.getBinaryStream(key);
+		if(binStream.isExists())
+			throw new NonUniqueKeyException("Key : "+key +" already present in the cache, to replace the value, use DataCache::replace() instead.");
+
+		binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, timeUnit);
 		return null;
 	}
 
@@ -102,8 +127,29 @@ public class RedisCache<T> implements DataCache<T> {
 		
 		//Replace in the remote cache
 		RBinaryStream binStream= client.getBinaryStream(key);
-		binStream.set(ByteSerializer.serialize((Serializable) t));
+
+		if(timeToLive!=0)
+			binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, TimeUnit.MILLISECONDS);
+		else
+			binStream.set(ByteSerializer.serialize((Serializable) t));
 		
+		return t;
+	}
+
+	@Override
+	public T replace(String key, T t, long timeToLive, TimeUnit timeUnit) {
+		if(!(t instanceof Serializable))
+			throw new ObjectNotSerialzableException("Non-Serializable objects cannot be stored on Redis");
+
+		//Replace in the local cache
+		if(this.cacheConfig.isEnableLocalCaching())
+			localCache.replace(key, t);
+
+		//Replace in the remote cache
+		RBinaryStream binStream= client.getBinaryStream(key);
+
+		binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, timeUnit);
+
 		return t;
 	}
 

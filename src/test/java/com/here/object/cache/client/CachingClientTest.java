@@ -3,6 +3,7 @@ package com.here.object.cache.client;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -170,4 +171,31 @@ public class CachingClientTest {
 		Assert.assertNull("Deletion was unsuccessful, fetched non-null result", testValue);
 		
 	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	public void remoteCacheTTLTest() throws Exception {
+		Map<String, String> testMap= new HashMap<>();
+		testMap.put("key", "value");
+		testMap.put("key1", "value1");
+
+		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig(2, TimeUnit.SECONDS, new ServerAddress("localhost", redisServerPort, false));
+
+		CachingClient<Map<String, String>> cacheClient = new CachingClient<>(clientConfig);
+
+		DataCache<Map<String, String>> cache = cacheClient.getCache();
+		cache.store("map", testMap);
+
+		testMap= cache.get("map");
+		Assert.assertNotNull("Storage was unsuccessful, fetched empty result", testMap);
+
+		Assert.assertEquals(2, testMap.size());
+
+		TimeUnit.SECONDS.sleep(2);
+
+		testMap= cache.get("map");
+		Assert.assertNull("Object not expired after TTL, fetched non-null result", testMap);
+	}
+
+
 }

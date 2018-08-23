@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.here.object.cache.config.CacheConfig;
 import com.here.object.cache.config.CachingMode;
@@ -26,6 +27,7 @@ public class RedisCacheConfig implements CacheConfig{
 	private final CachingMode cachingMode;
 	private boolean enableLocalCaching;
 	private int localCacheSize;
+	private long expirationInMs;
 
 
 	/**
@@ -36,7 +38,7 @@ public class RedisCacheConfig implements CacheConfig{
 	public RedisCacheConfig(CachingMode cachingMode,ServerAddress...servers) {
 		int serverCount= servers.length;
 		if(serverCount<1)
-			throw new InvalidConfigException("Atleast one server is required while using the redis caching mode");
+			throw new InvalidConfigException("At-least one server is required while using the redis caching mode");
 
 		redisServers = Arrays.stream(servers).map(ServerAddress::getConnectionString).collect(toList());
 		redisConnectionType= serverCount>1?RedisConnectionType.CLUSTER_CONNECTION:RedisConnectionType.SINGLE_SERVER;
@@ -53,12 +55,21 @@ public class RedisCacheConfig implements CacheConfig{
 	public RedisCacheConfig(CachingMode cachingMode,boolean enableLocalCaching, ServerAddress...servers) {
 		int serverCount= servers.length;
 		if(serverCount<1) 
-			throw new InvalidConfigException("Atleast one server is required while using the redis caching mode");
+			throw new InvalidConfigException("At-least one server is required while using the redis caching mode");
 		
 		redisServers = Arrays.stream(servers).map(ServerAddress::getConnectionString).collect(toList());
 		redisConnectionType= serverCount>1?RedisConnectionType.CLUSTER_CONNECTION:RedisConnectionType.SINGLE_SERVER;
 		this.cachingMode= cachingMode;
 		this.enableLocalCaching=enableLocalCaching;
+	}
+
+	/**
+	 * This Expires the element in the cache after the specified time from the time element is first inserted
+	 * @param timeToLive
+	 * @param timeUnit
+	 */
+	public void withTTL(long timeToLive, TimeUnit timeUnit){
+			this.expirationInMs = TimeUnit.MILLISECONDS.convert(timeToLive, timeUnit);
 	}
 
 	/**
@@ -111,5 +122,13 @@ public class RedisCacheConfig implements CacheConfig{
 	 */
 	public int getLocalCacheSize() {
 		return localCacheSize;
+	}
+
+	/**
+	 * The cache valid duration
+	 * @return the duration
+	 */
+	public long getExpirationInMs() {
+		return expirationInMs;
 	}
 }
