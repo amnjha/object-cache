@@ -1,14 +1,20 @@
 package com.here.object.cache.data;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.function.Function;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.here.object.cache.config.local.LocalCacheConfig;
 import com.here.object.cache.exceptions.NonUniqueKeyException;
 
@@ -20,8 +26,11 @@ import com.here.object.cache.exceptions.NonUniqueKeyException;
  */
 public class LocalCache<T>  implements DataCache<T>{
 	private LocalCacheConfig cacheConfig;
-	private Cache<String, T> localCache;
+	private LoadingCache<String, T> localCache;
 	private Cache<String, Collection<T>> collectionLocalCache;
+
+	private RedisCache<T> remoteCache;
+	private Function<String, T> valueSupplier;
 	
 	
 	/**
@@ -30,17 +39,72 @@ public class LocalCache<T>  implements DataCache<T>{
 	public LocalCache(LocalCacheConfig cacheConfig) {
 		super();
 		this.cacheConfig = cacheConfig;
-		localCache = configureLocalCache();
-		collectionLocalCache=configureCollectionCache();
+		this.localCache = configureLocalCache();
+		this.collectionLocalCache=configureCollectionCache();
+	}
+	
+	/**
+	 * @param cacheConfig
+	 */
+	public LocalCache(LocalCacheConfig cacheConfig, Function<String,T> valueSupplier) {
+		super();
+		this.cacheConfig = cacheConfig;
+		this.localCache = configureLocalCache();
+		this.collectionLocalCache=configureCollectionCache();
+		this.valueSupplier = valueSupplier;
 	}
 
 
-	private Cache<String, T> configureLocalCache() {
-		return CacheBuilder.
-				newBuilder().
-				expireAfterWrite(cacheConfig.getExpirationInMs(), TimeUnit.MILLISECONDS).
-				maximumSize(cacheConfig.getCacheSize()).
-				build();
+	/**
+	 * @param cacheConfig
+	 */
+	protected LocalCache(LocalCacheConfig cacheConfig, RedisCache<T> redisCache) {
+		super();
+		this.cacheConfig = cacheConfig;
+		this.localCache = configureLocalCache();
+		this.collectionLocalCache=configureCollectionCache();
+		this.remoteCache = redisCache;
+	}
+
+	/**
+	 * @param cacheConfig
+	 */
+	protected LocalCache(LocalCacheConfig cacheConfig, RedisCache<T> redisCache, Function<String, T> valueSupplier) {
+		super();
+		this.cacheConfig = cacheConfig;
+		this.localCache = configureLocalCache();
+		this.collectionLocalCache=configureCollectionCache();
+		this.remoteCache = redisCache;
+		this.valueSupplier = valueSupplier;
+	}
+
+	private LoadingCache<String, T> configureLocalCache() {
+
+		CacheLoader<String, T> cacheLoader = new CacheLoader<String, T>() {
+			@Override
+			public T load(String key) throws Exception {
+				
+				if (remoteCache != null) {
+					return remoteCache.getFromRemote(key);
+				}
+				
+				if(valueSupplier!=null) {
+					T t = valueSupplier.apply(key);
+					Optional.ofNullable(t).ifPresent(e->{
+						if(remoteCache!=null)
+							remoteCache.store(key, e);
+					});
+					return t;
+				}
+				
+				return null;
+			}
+		};
+		
+		return CacheBuilder.newBuilder()
+				.expireAfterWrite(cacheConfig.getExpirationInMs(), TimeUnit.MILLISECONDS)
+				.maximumSize(cacheConfig.getCacheSize())
+				.build(cacheLoader);
 	}
 	
 	private Cache<String, Collection<T>> configureCollectionCache(){
@@ -64,7 +128,11 @@ public class LocalCache<T>  implements DataCache<T>{
 
 	@Override
 	public T get(String key) {
-		return localCache.getIfPresent(key);
+		try {
+			return localCache.getUnchecked(key);
+		}catch (CacheLoader.InvalidCacheLoadException e){
+			return null;
+		}
 	}
 
 

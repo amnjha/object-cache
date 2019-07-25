@@ -1,6 +1,5 @@
 package com.here.object.cache.data;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;

@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -28,7 +29,7 @@ import redis.embedded.RedisServer;
 public class CachingClientTest {
 
 	private static RedisServer redisServer;
-	private static final int redisServerPort= 32768;
+	private static final int redisServerPort= 32769;
 	
 	@BeforeClass
 	public static void setUp() throws Exception {
@@ -163,8 +164,10 @@ public class CachingClientTest {
 		DataCache<String> localCache= (DataCache<String>) localCacheField.get(redisCache);
 		localCache.deleteIfPresent(key);
 		
-		sameObject=testValue==cache.get(key);
-		Assert.assertFalse(sameObject);
+		sameObject = testValue == cache.get(key);
+		Assert.assertFalse(sameObject); // Check the reference is different
+
+		Assert.assertEquals(testValue,cache.get(key));
 		
 		cache.deleteIfPresent(key);
 		testValue=cache.get(key);
@@ -172,7 +175,6 @@ public class CachingClientTest {
 		
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void remoteCacheTTLTest() throws Exception {
 		Map<String, String> testMap= new HashMap<>();
@@ -196,6 +198,16 @@ public class CachingClientTest {
 		testMap= cache.get("map");
 		Assert.assertNull("Object not expired after TTL, fetched non-null result", testMap);
 	}
+	
+	@Test
+	public void cacheLoaderTest() {
+		Function<String, String> valueSupplier = e -> e ;
 
-
+		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig();
+		CachingClient<String> cacheClient = new CachingClient<>(clientConfig);
+		DataCache<String> cache = cacheClient.getCache(valueSupplier);
+		
+		String value = "TEST_VALUE";
+		Assert.assertEquals(cache.get(value), value);
+	}
 }

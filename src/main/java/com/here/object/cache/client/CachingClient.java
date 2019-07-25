@@ -4,6 +4,7 @@
 package com.here.object.cache.client;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 import com.here.object.cache.config.CachingMode;
 import com.here.object.cache.config.ObjectCacheClientConfig;
@@ -42,6 +43,18 @@ public class CachingClient<T> {
 		return this.cache;
 	}
 	
+	private DataCache<T> buildCache(Function<String, T> valueLoader){
+		if(CachingMode.LOCAL_JVM_CACHE.equals(clientConfig.getCachingMode())) {
+			LocalCacheConfig localCacheConfig = (LocalCacheConfig) clientConfig.getCacheConfig();
+			cache= new LocalCache<>(localCacheConfig, valueLoader);
+		}
+		else if(CachingMode.STAND_ALONE_REDIS_CACHE.equals(clientConfig.getCachingMode())|| CachingMode.AWS_ELASTICACHE.equals(clientConfig.getCachingMode())) {
+			RedisCacheConfig redisCacheConfig= (RedisCacheConfig) clientConfig.getCacheConfig();
+			cache= new RedisCache<>(redisCacheConfig, valueLoader);
+		}
+		return this.cache;
+	}
+	
 	/**
 	 * This method builds the cache, if not already present and returns it
 	 * @return {@link DataCache} The cache held by this client
@@ -51,6 +64,22 @@ public class CachingClient<T> {
 			synchronized (clientConfig) {
 				if(cache==null) {
 					buildCache();
+				}
+			}
+		}
+		return this.cache;
+	}
+	
+	/**
+	 * This method builds the cache, if not already present and returns it
+	 * @param valueLoader The loader that populates the cache if key is not present
+	 * @return {@link DataCache} The cache held by this client
+	 */
+	public DataCache<T> getCache(Function<String, T> valueLoader){
+		if(cache==null) {
+			synchronized (clientConfig) {
+				if(cache==null) {
+					buildCache(valueLoader);
 				}
 			}
 		}

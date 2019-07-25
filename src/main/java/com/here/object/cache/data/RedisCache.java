@@ -2,23 +2,27 @@ package com.here.object.cache.data;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.here.object.cache.data.collections.CacheList;
-import com.here.object.cache.data.collections.CacheSet;
 import org.redisson.Redisson;
-import org.redisson.api.*;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RBinaryStream;
+import org.redisson.api.RKeys;
+import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
 import com.here.object.cache.config.local.LocalCacheConfig;
 import com.here.object.cache.config.redis.RedisCacheConfig;
 import com.here.object.cache.config.redis.RedisCacheConfig.RedisConnectionType;
+import com.here.object.cache.data.collections.CacheList;
+import com.here.object.cache.data.collections.CacheSet;
 import com.here.object.cache.exceptions.NonUniqueKeyException;
 import com.here.object.cache.exceptions.ObjectNotSerialzableException;
 import com.here.object.cache.serializer.ByteSerializer;
@@ -38,6 +42,7 @@ public class RedisCache<T> implements DataCache<T> {
 	private static Map<String, RedissonClient> clientHolder= new HashMap<>();
 	private static final String SHARED_COUNTER="SHARED_COUNTER";
 	private long timeToLive =0;
+	private Function<String,T> valueLoader;
 	
 	/**
 	 * @param cacheConfig
@@ -49,7 +54,27 @@ public class RedisCache<T> implements DataCache<T> {
 		client= buildRedissonClient();
 
 		if(this.cacheConfig.isEnableLocalCaching())
-			this.localCache= new LocalCache<>(new LocalCacheConfig(cacheConfig.getLocalCacheSize(), 7, TimeUnit.DAYS));
+			this.localCache= new LocalCache<>(new LocalCacheConfig(cacheConfig.getLocalCacheSize(), 7, TimeUnit.DAYS), this);
+		if(this.cacheConfig.getExpirationInMs()!=0){
+			this.timeToLive= this.cacheConfig.getExpirationInMs();
+		}
+	}
+	
+	/**
+	 * @param cacheConfig
+	 * @param valueLoader
+	 */
+	public RedisCache(RedisCacheConfig cacheConfig, Function<String, T> valueLoader) {
+		super();
+		this.cacheConfig = cacheConfig;
+		redissonConfig= generateRedissonConfig();
+		client= buildRedissonClient();
+
+		if(this.cacheConfig.isEnableLocalCaching())
+			this.localCache= new LocalCache<>(new LocalCacheConfig(cacheConfig.getLocalCacheSize(), 7, TimeUnit.DAYS), this, valueLoader);
+		else
+			this.valueLoader = valueLoader;
+		
 		if(this.cacheConfig.getExpirationInMs()!=0){
 			this.timeToLive= this.cacheConfig.getExpirationInMs();
 		}
@@ -113,6 +138,21 @@ public class RedisCache<T> implements DataCache<T> {
 		if(binStream.isExists())
 			return ByteSerializer.deserialize(binStream.get());
 		
+		// If Still not found, try to use the cache loader and load the remote cache before returning the value
+		if(valueLoader!=null) {
+			T t = valueLoader.apply(key);
+			Optional.ofNullable(t).ifPresent(e->store(key, e));
+			return t;
+		}
+		
+		return null;
+	}
+
+	public T getFromRemote(String key){
+		RBinaryStream binStream= client.getBinaryStream(key);
+		if(binStream.isExists())
+			return ByteSerializer.deserialize(binStream.get());
+
 		return null;
 	}
 
