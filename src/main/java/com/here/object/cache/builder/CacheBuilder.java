@@ -32,7 +32,7 @@ public class CacheBuilder {
 	private CacheBuilder() {
 	}
 
-	public CacheBuilder builder() {
+	public static CacheBuilder builder() {
 		return new CacheBuilder();
 	}
 
