@@ -28,6 +28,7 @@ public class CacheBuilder {
 	private AmazonElastiCacheClient awsClient;
 	private String cacheClusterId;
 	private boolean useSSL;
+	private String cacheId;
 
 	private CacheBuilder() {
 	}
@@ -41,6 +42,11 @@ public class CacheBuilder {
 		this.mode = cachingMode;
 		if (CachingMode.STAND_ALONE_REDIS_CACHE.equals(cachingMode) || CachingMode.AWS_ELASTICACHE.equals(cachingMode))
 			this.serverAdresses = new ArrayList<>();
+		return this;
+	}
+
+	public CacheBuilder withCacheId(String cacheId){
+		this.cacheId = cacheId;
 		return this;
 	}
 
@@ -120,6 +126,8 @@ public class CacheBuilder {
 			config.useRedisCache().withLocalCache();
 
 		CachingClient<T> cachingClient = new CachingClient<>(config);
+		if(this.cacheId!=null)
+			return cachingClient.getCache(cacheId);
 		return cachingClient.getCache();
 		
 	}
@@ -130,7 +138,8 @@ public class CacheBuilder {
 			config.useRedisCache().withLocalCache();
 
 		CachingClient<T> cachingClient = new CachingClient<>(config);
+		if(this.cacheId!=null)
+			return cachingClient.getCache(cacheLoader, cacheId);
 		return cachingClient.getCache(cacheLoader);
-		
 	}
 }

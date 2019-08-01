@@ -18,6 +18,8 @@ import com.amazonaws.services.elasticache.model.CacheNode;
 import com.amazonaws.services.elasticache.model.DescribeCacheClustersRequest;
 import com.amazonaws.services.elasticache.model.DescribeCacheClustersResult;
 import com.amazonaws.services.elasticache.model.Endpoint;
+import com.here.object.cache.builder.CacheBuilder;
+import com.here.object.cache.config.CachingMode;
 import com.here.object.cache.config.ObjectCacheClientConfig;
 import com.here.object.cache.config.redis.ServerAddress;
 import com.here.object.cache.data.DataCache;
@@ -203,9 +205,7 @@ public class CachingClientTest {
 	public void cacheLoaderTest() {
 		Function<String, String> valueSupplier = e -> e ;
 
-		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig();
-		CachingClient<String> cacheClient = new CachingClient<>(clientConfig);
-		DataCache<String> cache = cacheClient.getCache(valueSupplier);
+		DataCache<String> cache = CacheBuilder.builder().withCachingMode(CachingMode.LOCAL_JVM_CACHE).build(valueSupplier);
 		
 		String value = "TEST_VALUE";
 		Assert.assertEquals(cache.get(value), value);

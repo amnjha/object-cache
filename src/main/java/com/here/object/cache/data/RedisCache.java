@@ -300,6 +300,9 @@ public class RedisCache<T> implements DataCache<T> {
 	@Override
 	protected void finalize() throws Throwable {
 		super.finalize();
+		if(localCache!=null)
+			this.localCache.deleteCacheReference();
+
 		client.shutdown();
 	}
 	

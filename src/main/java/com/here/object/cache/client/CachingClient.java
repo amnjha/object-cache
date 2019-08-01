@@ -31,11 +31,23 @@ public class CachingClient<T> {
 		this.clientConfig= Objects.requireNonNull(cacheConfig,"Cache Config cannot be null");
 	}
 	
-	private DataCache<T> buildCache(){
+	private DataCache<T> buildCache(String... cacheId){
+		String cache_id = null;
+		if(cacheId.length!=0)
+			cache_id = cacheId[0];
+
 		if(CachingMode.LOCAL_JVM_CACHE.equals(clientConfig.getCachingMode())) {
 			LocalCacheConfig localCacheConfig = (LocalCacheConfig) clientConfig.getCacheConfig();
-			cache= new LocalCache<>(localCacheConfig);
+			if(cache_id!=null) {
+				cache = LocalCache.getCacheById(cache_id);
+				if (cache == null)
+					cache = new LocalCache<T>(localCacheConfig, cache_id);
+			}
+			else
+				cache = new LocalCache<>(localCacheConfig);
 		}
+
+		// Add support for cache ID in the Redis---- Required?
 		else if(CachingMode.STAND_ALONE_REDIS_CACHE.equals(clientConfig.getCachingMode())|| CachingMode.AWS_ELASTICACHE.equals(clientConfig.getCachingMode())) {
 			RedisCacheConfig redisCacheConfig= (RedisCacheConfig) clientConfig.getCacheConfig();
 			cache= new RedisCache<>(redisCacheConfig);
@@ -43,11 +55,23 @@ public class CachingClient<T> {
 		return this.cache;
 	}
 	
-	private DataCache<T> buildCache(Function<String, T> valueLoader){
+	private DataCache<T> buildCache(Function<String, T> valueLoader, String... cacheId){
+		String cache_id = null;
+		if(cacheId.length!=0)
+			cache_id = cacheId[0];
+
 		if(CachingMode.LOCAL_JVM_CACHE.equals(clientConfig.getCachingMode())) {
 			LocalCacheConfig localCacheConfig = (LocalCacheConfig) clientConfig.getCacheConfig();
-			cache= new LocalCache<>(localCacheConfig, valueLoader);
+			if(cache_id!=null) {
+				cache = LocalCache.getCacheById(cache_id);
+				if (cache == null)
+					cache = new LocalCache<T>(localCacheConfig, valueLoader, cache_id);
+			}
+			else
+				cache = new LocalCache<>(localCacheConfig, valueLoader);
 		}
+
+		// Add support for cache ID in the Redis---- Required?
 		else if(CachingMode.STAND_ALONE_REDIS_CACHE.equals(clientConfig.getCachingMode())|| CachingMode.AWS_ELASTICACHE.equals(clientConfig.getCachingMode())) {
 			RedisCacheConfig redisCacheConfig= (RedisCacheConfig) clientConfig.getCacheConfig();
 			cache= new RedisCache<>(redisCacheConfig, valueLoader);
@@ -69,6 +93,21 @@ public class CachingClient<T> {
 		}
 		return this.cache;
 	}
+
+	/**
+	 * This method builds the cache, if not already present and returns it
+	 * @return {@link DataCache} The cache held by this client
+	 */
+	public DataCache<T> getCache(String cacheId){
+		if(cache==null) {
+			synchronized (clientConfig) {
+				if(cache==null) {
+					buildCache(cacheId);
+				}
+			}
+		}
+		return this.cache;
+	}
 	
 	/**
 	 * This method builds the cache, if not already present and returns it
@@ -80,6 +119,23 @@ public class CachingClient<T> {
 			synchronized (clientConfig) {
 				if(cache==null) {
 					buildCache(valueLoader);
+				}
+			}
+		}
+		return this.cache;
+	}
+
+	/**
+	 * This method builds the cache, if not already present and returns it
+	 * @param valueLoader The loader that populates the cache if key is not present
+	 * @param cacheId the id with which this cache needs to be created
+	 * @return {@link DataCache} The cache held by this client
+	 */
+	public DataCache<T> getCache(Function<String, T> valueLoader, String cacheId){
+		if(cache==null) {
+			synchronized (clientConfig) {
+				if(cache==null) {
+					buildCache(valueLoader, cacheId);
 				}
 			}
 		}

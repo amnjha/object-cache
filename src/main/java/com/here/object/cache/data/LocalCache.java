@@ -1,11 +1,6 @@
 package com.here.object.cache.data;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
@@ -31,9 +26,13 @@ public class LocalCache<T>  implements DataCache<T>{
 
 	private RedisCache<T> remoteCache;
 	private Function<String, T> valueSupplier;
-	
-	
+
+	private String cacheId;
+
+	private static HashMap<String, LocalCache<?>> cacheMap= new HashMap<>();
+
 	/**
+	 *
 	 * @param cacheConfig
 	 */
 	public LocalCache(LocalCacheConfig cacheConfig) {
@@ -41,10 +40,28 @@ public class LocalCache<T>  implements DataCache<T>{
 		this.cacheConfig = cacheConfig;
 		this.localCache = configureLocalCache();
 		this.collectionLocalCache=configureCollectionCache();
+		this.cacheId = UUID.randomUUID().toString();
+		LocalCache.cacheMap.put(cacheId, this);
 	}
-	
+
 	/**
+	 *
 	 * @param cacheConfig
+	 * @param cacheId
+	 */
+	public LocalCache(LocalCacheConfig cacheConfig, String cacheId) {
+		super();
+		this.cacheConfig = cacheConfig;
+		this.localCache = configureLocalCache();
+		this.collectionLocalCache=configureCollectionCache();
+		this.cacheId = cacheId;
+		LocalCache.cacheMap.put(cacheId, this);
+	}
+
+	/**
+	 *
+	 * @param cacheConfig
+	 * @param valueSupplier
 	 */
 	public LocalCache(LocalCacheConfig cacheConfig, Function<String,T> valueSupplier) {
 		super();
@@ -52,11 +69,31 @@ public class LocalCache<T>  implements DataCache<T>{
 		this.localCache = configureLocalCache();
 		this.collectionLocalCache=configureCollectionCache();
 		this.valueSupplier = valueSupplier;
+		this.cacheId = UUID.randomUUID().toString();
+		LocalCache.cacheMap.put(cacheId, this);
+	}
+
+	/**
+	 *
+	 * @param cacheConfig
+	 * @param valueSupplier
+	 * @param cacheId
+	 */
+	public LocalCache(LocalCacheConfig cacheConfig, Function<String,T> valueSupplier, String cacheId) {
+		super();
+		this.cacheConfig = cacheConfig;
+		this.localCache = configureLocalCache();
+		this.collectionLocalCache=configureCollectionCache();
+		this.valueSupplier = valueSupplier;
+		this.cacheId = cacheId;
+		LocalCache.cacheMap.put(cacheId, this);
 	}
 
 
 	/**
+	 *
 	 * @param cacheConfig
+	 * @param redisCache
 	 */
 	protected LocalCache(LocalCacheConfig cacheConfig, RedisCache<T> redisCache) {
 		super();
@@ -64,10 +101,15 @@ public class LocalCache<T>  implements DataCache<T>{
 		this.localCache = configureLocalCache();
 		this.collectionLocalCache=configureCollectionCache();
 		this.remoteCache = redisCache;
+		this.cacheId = UUID.randomUUID().toString();
+		LocalCache.cacheMap.put(cacheId, this);
 	}
 
 	/**
+	 *
 	 * @param cacheConfig
+	 * @param redisCache
+	 * @param valueSupplier
 	 */
 	protected LocalCache(LocalCacheConfig cacheConfig, RedisCache<T> redisCache, Function<String, T> valueSupplier) {
 		super();
@@ -76,6 +118,8 @@ public class LocalCache<T>  implements DataCache<T>{
 		this.collectionLocalCache=configureCollectionCache();
 		this.remoteCache = redisCache;
 		this.valueSupplier = valueSupplier;
+		this.cacheId = UUID.randomUUID().toString();
+		LocalCache.cacheMap.put(cacheId, this);
 	}
 
 	private LoadingCache<String, T> configureLocalCache() {
@@ -115,6 +159,13 @@ public class LocalCache<T>  implements DataCache<T>{
 				build();
 	}
 
+	public void deleteCacheReference() {
+		LocalCache.cacheMap.remove(this.cacheId);
+	}
+
+	public static <T> LocalCache<T> getCacheById(String cacheId){
+		return (LocalCache<T>) cacheMap.get(cacheId);
+	}
 
 	@Override
 	public T store(String key, T t) {
