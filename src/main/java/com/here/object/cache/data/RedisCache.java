@@ -1,12 +1,7 @@
 package com.here.object.cache.data;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -35,12 +30,14 @@ import com.here.object.cache.serializer.ByteSerializer;
  */
 public class RedisCache<T> implements DataCache<T> {
 
+	private String cacheId;
 	private LocalCache<T> localCache;
 	private RedisCacheConfig cacheConfig;
 	private RedissonClient client;
 	private Config redissonConfig;
 	private static Map<String, RedissonClient> clientHolder= new HashMap<>();
 	private static final String SHARED_COUNTER="SHARED_COUNTER";
+	private final String CACHE_KEY_APPENDER;
 	private long timeToLive =0;
 	private Function<String,T> valueLoader;
 	
@@ -53,11 +50,17 @@ public class RedisCache<T> implements DataCache<T> {
 		redissonConfig= generateRedissonConfig();
 		client= buildRedissonClient();
 
+		this.cacheId= cacheConfig.getCacheId();
+		if(cacheConfig.getCacheId()==null)
+			this.cacheId = UUID.randomUUID().toString();
+
 		if(this.cacheConfig.isEnableLocalCaching())
-			this.localCache= new LocalCache<>(new LocalCacheConfig(cacheConfig.getLocalCacheSize(), 7, TimeUnit.DAYS), this);
+			this.localCache= new LocalCache<>(new LocalCacheConfig(cacheConfig.getLocalCacheSize(), 7, TimeUnit.DAYS), this, this.cacheId);
 		if(this.cacheConfig.getExpirationInMs()!=0){
 			this.timeToLive= this.cacheConfig.getExpirationInMs();
 		}
+
+		CACHE_KEY_APPENDER = cacheId;
 	}
 	
 	/**
@@ -70,14 +73,24 @@ public class RedisCache<T> implements DataCache<T> {
 		redissonConfig= generateRedissonConfig();
 		client= buildRedissonClient();
 
+		this.cacheId= cacheConfig.getCacheId();
+		if(cacheConfig.getCacheId()==null)
+			this.cacheId = UUID.randomUUID().toString();
+
 		if(this.cacheConfig.isEnableLocalCaching())
-			this.localCache= new LocalCache<>(new LocalCacheConfig(cacheConfig.getLocalCacheSize(), 7, TimeUnit.DAYS), this, valueLoader);
+			this.localCache= new LocalCache<>(new LocalCacheConfig(cacheConfig.getLocalCacheSize(), 7, TimeUnit.DAYS), this, valueLoader, this.getCacheId());
 		else
 			this.valueLoader = valueLoader;
 		
 		if(this.cacheConfig.getExpirationInMs()!=0){
 			this.timeToLive= this.cacheConfig.getExpirationInMs();
 		}
+
+		CACHE_KEY_APPENDER = cacheId;
+	}
+
+	public String getCacheId() {
+		return cacheId;
 	}
 
 	@Override
@@ -90,9 +103,9 @@ public class RedisCache<T> implements DataCache<T> {
 			localCache.store(key, t);
 		
 		//Store in the remote cache
-		RBinaryStream binStream= client.getBinaryStream(key);
+		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 		if(binStream.isExists())
-			throw new NonUniqueKeyException("Key : "+key +" already present in the cache, to replace the value, use DataCache::replace() instead.");
+			throw new NonUniqueKeyException("Key : " + key +" already present in the cache, to replace the value, use DataCache::replace() instead.");
 		
 		if(timeToLive!=0)
 			binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, TimeUnit.MILLISECONDS);
@@ -111,9 +124,9 @@ public class RedisCache<T> implements DataCache<T> {
 			localCache.store(key, t);
 
 		//Store in the remote cache
-		RBinaryStream binStream= client.getBinaryStream(key);
+		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 		if(binStream.isExists())
-			throw new NonUniqueKeyException("Key : "+key +" already present in the cache, to replace the value, use DataCache::replace() instead.");
+			throw new NonUniqueKeyException("Key : " + key + " already present in the cache, to replace the value, use DataCache::replace() instead.");
 
 		binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, timeUnit);
 		return null;
@@ -127,19 +140,19 @@ public class RedisCache<T> implements DataCache<T> {
 			T t = localCache.get(key);
 			if (t != null) {
 				//if found in local cache, validate if it still exists in the remote cache
-				RBinaryStream binStream = client.getBinaryStream(key);
+				RBinaryStream binStream = client.getBinaryStream(CACHE_KEY_APPENDER + key);
 				if (binStream.isExists())
 					return t;
 			}
 		}
 		
 		// if not found, look in the remote cache
-		RBinaryStream binStream= client.getBinaryStream(key);	
+		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 		if(binStream.isExists())
 			return ByteSerializer.deserialize(binStream.get());
 		
 		// If Still not found, try to use the cache loader and load the remote cache before returning the value
-		if(valueLoader!=null) {
+		if(valueLoader!=null && !this.cacheConfig.isEnableLocalCaching()) {
 			T t = valueLoader.apply(key);
 			Optional.ofNullable(t).ifPresent(e->store(key, e));
 			return t;
@@ -149,7 +162,7 @@ public class RedisCache<T> implements DataCache<T> {
 	}
 
 	public T getFromRemote(String key){
-		RBinaryStream binStream= client.getBinaryStream(key);
+		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 		if(binStream.isExists())
 			return ByteSerializer.deserialize(binStream.get());
 
@@ -166,7 +179,7 @@ public class RedisCache<T> implements DataCache<T> {
 			localCache.replace(key, t);
 		
 		//Replace in the remote cache
-		RBinaryStream binStream= client.getBinaryStream(key);
+		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 
 		if(timeToLive!=0)
 			binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, TimeUnit.MILLISECONDS);
@@ -186,7 +199,7 @@ public class RedisCache<T> implements DataCache<T> {
 			localCache.replace(key, t);
 
 		//Replace in the remote cache
-		RBinaryStream binStream= client.getBinaryStream(key);
+		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 
 		binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, timeUnit);
 
@@ -201,13 +214,13 @@ public class RedisCache<T> implements DataCache<T> {
 			localCache.deleteIfPresent(key);
 		
 		//delete from remote cache as well
-		RBinaryStream binStream= client.getBinaryStream(key);
+		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 		return binStream.delete();
 	}
 	
 	@Override
 	public AtomicCounter getSharedAtomicCounter(String counterName) {
-		RAtomicLong counterValue = client.getAtomicLong(counterName+RedisCache.SHARED_COUNTER);
+		RAtomicLong counterValue = client.getAtomicLong(CACHE_KEY_APPENDER + counterName + RedisCache.SHARED_COUNTER);
 		AtomicCounter counter = new AtomicCounter(counterValue);
 		return counter;
 	}
@@ -220,7 +233,7 @@ public class RedisCache<T> implements DataCache<T> {
 	 */
 	@Override
 	public Set<T> getSet(String setName) {
-		Set<T> set = new CacheSet<>(client.getSet(setName));
+		Set<T> set = new CacheSet<>(client.getSet(CACHE_KEY_APPENDER + setName));
 		return set;
 	}
 
@@ -232,7 +245,7 @@ public class RedisCache<T> implements DataCache<T> {
 	 */
 	@Override
 	public List<T> getList(String listName) {
-		List<T> list = new CacheList<>(client.getList(listName));
+		List<T> list = new CacheList<>(client.getList(CACHE_KEY_APPENDER + listName));
 		return list;
 	}
 
@@ -240,7 +253,9 @@ public class RedisCache<T> implements DataCache<T> {
 	public List<String> getAllKeys(){
 		RKeys keys= client.getKeys();
 		List<String> keyList = new ArrayList<>();
-		keys.getKeys().forEach(keyList::add);
+		List<String> actualKeys = new ArrayList<>();
+		keys.getKeys().forEach(actualKeys::add);
+		actualKeys.stream().map(val -> val.replace(CACHE_KEY_APPENDER, "")).forEach(keyList::add);
 		return keyList;
 	}
 

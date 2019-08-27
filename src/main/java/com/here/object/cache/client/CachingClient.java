@@ -1,6 +1,3 @@
-/**
- * 
- */
 package com.here.object.cache.client;
 
 import java.util.Objects;
@@ -21,7 +18,7 @@ import com.here.object.cache.data.RedisCache;
  */
 public class CachingClient<T> {
 	private DataCache<T> cache;
-	private ObjectCacheClientConfig clientConfig;
+	private final ObjectCacheClientConfig clientConfig;
 
 	/**
 	 * 
@@ -41,7 +38,7 @@ public class CachingClient<T> {
 			if(cache_id!=null) {
 				cache = LocalCache.getCacheById(cache_id);
 				if (cache == null)
-					cache = new LocalCache<T>(localCacheConfig, cache_id);
+					cache = new LocalCache<>(localCacheConfig, cache_id);
 			}
 			else
 				cache = new LocalCache<>(localCacheConfig);
@@ -65,15 +62,15 @@ public class CachingClient<T> {
 			if(cache_id!=null) {
 				cache = LocalCache.getCacheById(cache_id);
 				if (cache == null)
-					cache = new LocalCache<T>(localCacheConfig, valueLoader, cache_id);
+					cache = new LocalCache<>(localCacheConfig, valueLoader, cache_id);
 			}
 			else
 				cache = new LocalCache<>(localCacheConfig, valueLoader);
 		}
 
-		// Add support for cache ID in the Redis---- Required?
 		else if(CachingMode.STAND_ALONE_REDIS_CACHE.equals(clientConfig.getCachingMode())|| CachingMode.AWS_ELASTICACHE.equals(clientConfig.getCachingMode())) {
 			RedisCacheConfig redisCacheConfig= (RedisCacheConfig) clientConfig.getCacheConfig();
+			redisCacheConfig.setCacheId(cache_id);
 			cache= new RedisCache<>(redisCacheConfig, valueLoader);
 		}
 		return this.cache;

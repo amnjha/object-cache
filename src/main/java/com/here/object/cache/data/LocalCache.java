@@ -109,6 +109,24 @@ public class LocalCache<T>  implements DataCache<T>{
 	 *
 	 * @param cacheConfig
 	 * @param redisCache
+	 */
+	protected LocalCache(LocalCacheConfig cacheConfig, RedisCache<T> redisCache, String cacheId) {
+		super();
+		this.cacheConfig = cacheConfig;
+		this.localCache = configureLocalCache();
+		this.collectionLocalCache=configureCollectionCache();
+		this.remoteCache = redisCache;
+		this.cacheId = cacheId;
+		if(cacheId == null)
+			this.cacheId = UUID.randomUUID().toString();
+		LocalCache.cacheMap.put(cacheId, this);
+	}
+
+
+	/**
+	 *
+	 * @param cacheConfig
+	 * @param redisCache
 	 * @param valueSupplier
 	 */
 	protected LocalCache(LocalCacheConfig cacheConfig, RedisCache<T> redisCache, Function<String, T> valueSupplier) {
@@ -119,6 +137,26 @@ public class LocalCache<T>  implements DataCache<T>{
 		this.remoteCache = redisCache;
 		this.valueSupplier = valueSupplier;
 		this.cacheId = UUID.randomUUID().toString();
+		LocalCache.cacheMap.put(cacheId, this);
+	}
+
+	/**
+	 *
+	 * @param cacheConfig
+	 * @param redisCache
+	 * @param valueSupplier
+	 * @param cacheId
+	 */
+	protected LocalCache(LocalCacheConfig cacheConfig, RedisCache<T> redisCache, Function<String, T> valueSupplier, String cacheId) {
+		super();
+		this.cacheConfig = cacheConfig;
+		this.localCache = configureLocalCache();
+		this.collectionLocalCache=configureCollectionCache();
+		this.remoteCache = redisCache;
+		this.valueSupplier = valueSupplier;
+		this.cacheId = cacheId;
+		if(cacheId == null)
+			this.cacheId = UUID.randomUUID().toString();
 		LocalCache.cacheMap.put(cacheId, this);
 	}
 
