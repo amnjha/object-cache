@@ -33,8 +33,13 @@ public class CacheBuilder {
 	private CacheBuilder() {
 	}
 
-	public static CacheBuilder builder() {
+	public static CacheBuilder newBuilder() {
 		return new CacheBuilder();
+	}
+
+	@Deprecated
+	public static CacheBuilder builder(){
+		return newBuilder();
 	}
 
 	public CacheBuilder withCachingMode(CachingMode cachingMode) {

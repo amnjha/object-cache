@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.here.object.cache.builder.CacheBuilder;
 import com.here.object.cache.exceptions.NonUniqueKeyException;
 import com.here.object.cache.exceptions.ObjectNotSerialzableException;
 
@@ -110,4 +111,8 @@ public interface DataCache<T> {
     long deleteByKeyPattern(String keyPattern);
 
     long deleteByKeys(String... keys);
+
+    static CacheBuilder builder(){
+    	return CacheBuilder.newBuilder();
+	}
 }

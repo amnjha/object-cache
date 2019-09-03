@@ -205,7 +205,7 @@ public class CachingClientTest {
 	public void cacheLoaderTest() {
 		Function<String, String> valueSupplier = e -> e ;
 
-		DataCache<String> cache = CacheBuilder.builder().withCachingMode(CachingMode.LOCAL_JVM_CACHE).build(valueSupplier);
+		DataCache<String> cache = CacheBuilder.newBuilder().withCachingMode(CachingMode.LOCAL_JVM_CACHE).build(valueSupplier);
 		
 		String value = "TEST_VALUE";
 		Assert.assertEquals(cache.get(value), value);
