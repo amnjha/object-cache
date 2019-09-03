@@ -98,9 +98,9 @@ public class CacheBuilder {
 				throw new InvalidConfigException("Server Adresses not set");
 
 			if (ttlUnit != null && ttl != 0)
-				config = new ObjectCacheClientConfig(ttl, ttlUnit, (ServerAddress[]) serverAdresses.toArray());
+				config = new ObjectCacheClientConfig(ttl, ttlUnit, serverAdresses.toArray(new ServerAddress[0]));
 			else
-				config = new ObjectCacheClientConfig((ServerAddress[]) serverAdresses.toArray());
+				config = new ObjectCacheClientConfig(serverAdresses.toArray(new ServerAddress[0]));
 
 			return config;
 
