@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import com.here.object.cache.builder.CacheBuilder;
 import com.here.object.cache.exceptions.NonUniqueKeyException;
 import com.here.object.cache.exceptions.ObjectNotSerialzableException;
+import org.redisson.api.RFuture;
 
 /**
  * 
@@ -111,6 +112,14 @@ public interface DataCache<T> {
     long deleteByKeyPattern(String keyPattern);
 
     long deleteByKeys(String... keys);
+
+    public default void purgeCache(){
+		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
+	}
+
+	public default RFuture<Void> purgeCacheAsync(){
+		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
+	}
 
     static CacheBuilder builder(){
     	return CacheBuilder.newBuilder();

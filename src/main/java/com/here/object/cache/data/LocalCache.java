@@ -308,10 +308,15 @@ public class LocalCache<T>  implements DataCache<T>{
 
 
 	@Override
-	protected void finalize() throws Throwable {
-		super.finalize();
+	public void purgeCache(){
 		localCache.invalidateAll();
 		localCache.cleanUp();
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		purgeCache();
 	}
 	
 	

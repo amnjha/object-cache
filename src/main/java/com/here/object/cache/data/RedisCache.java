@@ -7,10 +7,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.redisson.Redisson;
-import org.redisson.api.RAtomicLong;
-import org.redisson.api.RBinaryStream;
-import org.redisson.api.RKeys;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.config.Config;
 
 import com.here.object.cache.config.local.LocalCacheConfig;
@@ -277,6 +274,32 @@ public class RedisCache<T> implements DataCache<T> {
 	public long deleteByKeys(String...keys){
 		RKeys key= client.getKeys();
 		return key.delete(keys);
+	}
+
+	/**
+	 * Delete all keys of all existing databases in background without blocking server.
+	 * Requires Redis 4.0+
+	 * @return
+	 */
+	@Override
+	public RFuture<Void> purgeCacheAsync(){
+		if(this.cacheConfig.isEnableLocalCaching()){
+			this.localCache.purgeCache();
+		}
+
+		return client.getKeys().flushallAsync();
+	}
+
+	/**
+	 * Delete all keys of all existing databases
+	 */
+	@Override
+	public void purgeCache(){
+		if(this.cacheConfig.isEnableLocalCaching()){
+			this.localCache.purgeCache();
+		}
+
+		client.getKeys().flushall();
 	}
 
 	private Config generateRedissonConfig() {
