@@ -9,9 +9,11 @@ import java.util.function.Function;
 import com.amazonaws.services.elasticache.AmazonElastiCacheClient;
 import com.here.object.cache.client.CachingClient;
 import com.here.object.cache.config.*;
+import com.here.object.cache.config.redis.RedisCacheConfig;
 import com.here.object.cache.data.DataCache;
 import com.here.object.cache.exceptions.InvalidConfigException;
 import com.here.object.cache.config.redis.ServerAddress;
+import com.here.object.cache.serializer.Serializer;
 
 /**
  * 
@@ -29,6 +31,7 @@ public class CacheBuilder {
 	private String cacheClusterId;
 	private boolean useSSL;
 	private String cacheId;
+	private Serializer serializer;
 
 	private CacheBuilder() {
 	}
@@ -86,6 +89,11 @@ public class CacheBuilder {
 		return this;
 	}
 
+	public CacheBuilder withCustomSerializer(Serializer serializer){
+		this.serializer = serializer;
+		return this;
+	}
+
 	private ObjectCacheClientConfig buildConfig() {
 		ObjectCacheClientConfig config = null;
 		
@@ -107,6 +115,9 @@ public class CacheBuilder {
 			else
 				config = new ObjectCacheClientConfig(serverAdresses.toArray(new ServerAddress[0]));
 
+			if(serializer!=null)
+				config.useRedisCache().withCustomSerializer(serializer);
+
 			return config;
 
 		case AWS_ELASTICACHE:
@@ -118,6 +129,10 @@ public class CacheBuilder {
 			} else {
 				config = new ObjectCacheClientConfig(awsClient, cacheClusterId, useSSL);
 			}
+
+			if(serializer!=null)
+				config.useRedisCache().withCustomSerializer(serializer);
+
 			return config;
 
 		default:

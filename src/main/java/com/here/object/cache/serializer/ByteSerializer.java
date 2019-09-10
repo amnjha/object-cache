@@ -10,13 +10,13 @@ import org.apache.commons.lang3.SerializationUtils;
  * @author amajha
  *
  */
-public class ByteSerializer {
-	public static byte[] serialize(Serializable object) {
+public class ByteSerializer implements Serializer{
+	public byte[] serialize(Serializable object) {
 		byte[] serializedBytes= SerializationUtils.serialize(object);
 		return serializedBytes;
 	}
 	
-	public static <T> T deserialize(byte[] objectData) {
+	public <T> T deserialize(byte[] objectData) {
 		return SerializationUtils.deserialize(objectData);
 	}
 }

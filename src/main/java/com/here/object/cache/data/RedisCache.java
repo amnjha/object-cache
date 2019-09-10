@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.here.object.cache.serializer.Serializer;
 import org.redisson.Redisson;
 import org.redisson.api.*;
 import org.redisson.config.Config;
@@ -17,7 +18,6 @@ import com.here.object.cache.data.collections.CacheList;
 import com.here.object.cache.data.collections.CacheSet;
 import com.here.object.cache.exceptions.NonUniqueKeyException;
 import com.here.object.cache.exceptions.ObjectNotSerialzableException;
-import com.here.object.cache.serializer.ByteSerializer;
 
 /**
  * 
@@ -37,6 +37,7 @@ public class RedisCache<T> implements DataCache<T> {
 	private final String CACHE_KEY_APPENDER;
 	private long timeToLive =0;
 	private Function<String,T> valueLoader;
+	private Serializer serializer;
 	
 	/**
 	 * @param cacheConfig
@@ -44,8 +45,9 @@ public class RedisCache<T> implements DataCache<T> {
 	public RedisCache(RedisCacheConfig cacheConfig) {
 		super();
 		this.cacheConfig = cacheConfig;
-		redissonConfig= generateRedissonConfig();
-		client= buildRedissonClient();
+		this.redissonConfig= generateRedissonConfig();
+		this.client= buildRedissonClient();
+		this.serializer = cacheConfig.getSerializer();
 
 		this.cacheId= cacheConfig.getCacheId();
 		if(cacheConfig.getCacheId()==null)
@@ -105,9 +107,9 @@ public class RedisCache<T> implements DataCache<T> {
 			throw new NonUniqueKeyException("Key : " + key +" already present in the cache, to replace the value, use DataCache::replace() instead.");
 		
 		if(timeToLive!=0)
-			binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, TimeUnit.MILLISECONDS);
+			binStream.set(serializer.serialize((Serializable) t), timeToLive, TimeUnit.MILLISECONDS);
 		else
-			binStream.set(ByteSerializer.serialize((Serializable) t));
+			binStream.set(serializer.serialize((Serializable) t));
 		return null;
 	}
 
@@ -125,7 +127,7 @@ public class RedisCache<T> implements DataCache<T> {
 		if(binStream.isExists())
 			throw new NonUniqueKeyException("Key : " + key + " already present in the cache, to replace the value, use DataCache::replace() instead.");
 
-		binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, timeUnit);
+		binStream.set(serializer.serialize((Serializable) t), timeToLive, timeUnit);
 		return null;
 	}
 
@@ -146,7 +148,7 @@ public class RedisCache<T> implements DataCache<T> {
 		// if not found, look in the remote cache
 		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 		if(binStream.isExists())
-			return ByteSerializer.deserialize(binStream.get());
+			return serializer.deserialize(binStream.get());
 		
 		// If Still not found, try to use the cache loader and load the remote cache before returning the value
 		if(valueLoader!=null && !this.cacheConfig.isEnableLocalCaching()) {
@@ -161,7 +163,7 @@ public class RedisCache<T> implements DataCache<T> {
 	public T getFromRemote(String key){
 		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 		if(binStream.isExists())
-			return ByteSerializer.deserialize(binStream.get());
+			return serializer.deserialize(binStream.get());
 
 		return null;
 	}
@@ -179,9 +181,9 @@ public class RedisCache<T> implements DataCache<T> {
 		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 
 		if(timeToLive!=0)
-			binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, TimeUnit.MILLISECONDS);
+			binStream.set(serializer.serialize((Serializable) t), timeToLive, TimeUnit.MILLISECONDS);
 		else
-			binStream.set(ByteSerializer.serialize((Serializable) t));
+			binStream.set(serializer.serialize((Serializable) t));
 		
 		return t;
 	}
@@ -198,7 +200,7 @@ public class RedisCache<T> implements DataCache<T> {
 		//Replace in the remote cache
 		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 
-		binStream.set(ByteSerializer.serialize((Serializable) t), timeToLive, timeUnit);
+		binStream.set(serializer.serialize((Serializable) t), timeToLive, timeUnit);
 
 		return t;
 	}

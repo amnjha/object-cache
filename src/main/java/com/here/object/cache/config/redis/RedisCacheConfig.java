@@ -9,6 +9,8 @@ import java.util.concurrent.TimeUnit;
 import com.here.object.cache.config.CacheConfig;
 import com.here.object.cache.config.CachingMode;
 import com.here.object.cache.exceptions.InvalidConfigException;
+import com.here.object.cache.serializer.ByteSerializer;
+import com.here.object.cache.serializer.Serializer;
 
 /**
  * 
@@ -29,6 +31,7 @@ public class RedisCacheConfig implements CacheConfig{
 	private boolean enableLocalCaching;
 	private int localCacheSize;
 	private long expirationInMs;
+	private Serializer serializer = new ByteSerializer();
 
 
 	/**
@@ -101,6 +104,10 @@ public class RedisCacheConfig implements CacheConfig{
 		this.localCacheSize= cacheSize;
 	}
 
+	public void withCustomSerializer(Serializer serializer){
+		this.serializer = serializer;
+	}
+
 	/**
 	 * Enables using the local-caching with local cache size as 500
 	 */
@@ -158,5 +165,9 @@ public class RedisCacheConfig implements CacheConfig{
 	 */
 	public long getExpirationInMs() {
 		return expirationInMs;
+	}
+
+	public Serializer getSerializer() {
+		return serializer;
 	}
 }
