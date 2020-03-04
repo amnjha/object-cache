@@ -1,6 +1,7 @@
 package com.here.object.cache.builder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -76,6 +77,13 @@ public class CacheBuilder {
 		return this;
 	}
 
+	public CacheBuilder withServerAddresses(ServerAddress... serverAddresses) {
+		if (this.serverAdresses == null)
+			throw new UnsupportedOperationException("Server Adresses can only be set when using a remote cache");
+		this.serverAdresses.addAll(Arrays.asList(serverAddresses));
+		return this;
+	}
+
 	public CacheBuilder withTTL(long ttl, TimeUnit unit) {
 		Objects.nonNull(unit);
 		this.ttl = ttl;
@@ -96,47 +104,63 @@ public class CacheBuilder {
 
 	private ObjectCacheClientConfig buildConfig() {
 		ObjectCacheClientConfig config = null;
-		
+
 		switch (this.mode) {
-		case LOCAL_JVM_CACHE:
-			if (ttlUnit != null && ttl != 0)
-				config = new ObjectCacheClientConfig(ttl, ttlUnit);
-			else
-				config = new ObjectCacheClientConfig();
+			case LOCAL_JVM_CACHE:
+				if (ttlUnit != null && ttl != 0)
+					config = new ObjectCacheClientConfig(ttl, ttlUnit);
+				else
+					config = new ObjectCacheClientConfig();
 
-			return config;
+				return config;
 
-		case STAND_ALONE_REDIS_CACHE:
-			if (serverAdresses == null || serverAdresses.isEmpty())
-				throw new InvalidConfigException("Server Adresses not set");
+			case STAND_ALONE_REDIS_CACHE:
+				if (serverAdresses == null || serverAdresses.isEmpty())
+					throw new InvalidConfigException("Server Adresses not set");
 
-			if (ttlUnit != null && ttl != 0)
-				config = new ObjectCacheClientConfig(ttl, ttlUnit, serverAdresses.toArray(new ServerAddress[0]));
-			else
-				config = new ObjectCacheClientConfig(serverAdresses.toArray(new ServerAddress[0]));
+				if (ttlUnit != null && ttl != 0)
+					config = new ObjectCacheClientConfig(ttl, ttlUnit, serverAdresses.toArray(new ServerAddress[0]));
+				else
+					config = new ObjectCacheClientConfig(serverAdresses.toArray(new ServerAddress[0]));
 
-			if(serializer!=null)
-				config.useRedisCache().withCustomSerializer(serializer);
+				if (serializer != null)
+					config.useRedisCache().withCustomSerializer(serializer);
 
-			return config;
+				return config;
 
-		case AWS_ELASTICACHE:
-			if (awsClient == null || cacheClusterId == null)
-				throw new InvalidConfigException("Aws Config not set");
+			case CLUSTER_MODE_REDIS_CACHE:
+				if (serverAdresses == null || serverAdresses.isEmpty())
+					throw new InvalidConfigException("Server Adresses not set");
 
-			if (ttlUnit != null && ttl != 0) {
-				config = new ObjectCacheClientConfig(awsClient, cacheClusterId, useSSL, ttl, ttlUnit);
-			} else {
-				config = new ObjectCacheClientConfig(awsClient, cacheClusterId, useSSL);
-			}
+				final ServerAddress[] serverAddressesArray = serverAdresses.stream().toArray(ServerAddress[]::new);
 
-			if(serializer!=null)
-				config.useRedisCache().withCustomSerializer(serializer);
+				if (ttlUnit != null && ttl != 0)
+					config = new ObjectCacheClientConfig(ttl, ttlUnit, serverAddressesArray);
+				else
+					config = new ObjectCacheClientConfig(serverAddressesArray);
 
-			return config;
+				if (serializer != null)
+					config.useRedisCache().withCustomSerializer(serializer);
 
-		default:
-			throw new IllegalStateException("No Configuration Selected, verify the caching mode");
+				return config;
+
+			case AWS_ELASTICACHE:
+				if (awsClient == null || cacheClusterId == null)
+					throw new InvalidConfigException("Aws Config not set");
+
+				if (ttlUnit != null && ttl != 0) {
+					config = new ObjectCacheClientConfig(awsClient, cacheClusterId, useSSL, ttl, ttlUnit);
+				} else {
+					config = new ObjectCacheClientConfig(awsClient, cacheClusterId, useSSL);
+				}
+
+				if (serializer != null)
+					config.useRedisCache().withCustomSerializer(serializer);
+
+				return config;
+
+			default:
+				throw new IllegalStateException("No Configuration Selected, verify the caching mode");
 		}
 	}
 
