@@ -49,7 +49,7 @@ public class CacheBuilder {
 	public CacheBuilder withCachingMode(CachingMode cachingMode) {
 		Objects.nonNull(cachingMode);
 		this.mode = cachingMode;
-		if (CachingMode.STAND_ALONE_REDIS_CACHE.equals(cachingMode) || CachingMode.AWS_ELASTICACHE.equals(cachingMode))
+		if (CachingMode.STAND_ALONE_REDIS_CACHE.equals(cachingMode) || CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(cachingMode)|| CachingMode.AWS_ELASTICACHE.equals(cachingMode))
 			this.serverAdresses = new ArrayList<>();
 		return this;
 	}
