@@ -315,7 +315,7 @@ public class RedisCache<T> implements DataCache<T> {
 	        config.useSingleServer().setRetryInterval(2000);
 		}
 		else {
-			config.useClusterServers().addNodeAddress((String[]) cacheConfig.getRedisServers().toArray());
+			config.useClusterServers().addNodeAddress((String[]) cacheConfig.getRedisServers().toArray(new String[cacheConfig.getRedisServers().size()]));
 			config.useClusterServers().setRetryAttempts(Integer.MAX_VALUE);
 	        config.useClusterServers().setTimeout(10000);
 	        config.useClusterServers().setMasterConnectionPoolSize(50);
