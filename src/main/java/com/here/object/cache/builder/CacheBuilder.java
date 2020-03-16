@@ -23,6 +23,9 @@ import com.here.object.cache.serializer.Serializer;
  */
 public class CacheBuilder {
 
+	public static final int MIN_NETTY_THREADS = 32;
+	public static final int MAX_NETTY_THREADS = 1000;
+
 	private CachingMode mode;
 	private List<ServerAddress> serverAdresses;
 	private long ttl;
@@ -33,7 +36,8 @@ public class CacheBuilder {
 	private boolean useSSL;
 	private String cacheId;
 	private Serializer serializer;
-	private int numThreads = 32;
+	private int numThreads = MIN_NETTY_THREADS;
+
 
 	private CacheBuilder() {
 	}

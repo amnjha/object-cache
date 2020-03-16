@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import com.here.object.cache.builder.CacheBuilder;
 import com.here.object.cache.config.CacheConfig;
 import com.here.object.cache.config.CachingMode;
 import com.here.object.cache.exceptions.InvalidConfigException;
@@ -162,7 +163,9 @@ public class RedisCacheConfig implements CacheConfig{
 
 	/**
 	 * Set the number of netty threads to be used for Redis Transport
-	 * Min Value is 32, even if you set the value to a lower value, 32 threads will be used
+	 * Min Value is CacheBuilder.MIN_NETTY_THREADS, and Max Value is CacheBuilder.MAX_NETTY_THREADS
+	 * even if you set the value to a lower value than MIN_NETTY_THREADS, 32 threads will be used,
+	 * and if you set it more than MAX_NETTY_THREADS then MAX_NETTY_THREADS would be used.
 	 * @param numThreads
 	 */
 	public void setNumThreads(int numThreads) {
@@ -170,7 +173,8 @@ public class RedisCacheConfig implements CacheConfig{
 	}
 
 	public int getNumThreads() {
-		return numThreads > 32 ? numThreads : 32;
+		return numThreads < CacheBuilder.MIN_NETTY_THREADS ? CacheBuilder.MIN_NETTY_THREADS :
+				numThreads > CacheBuilder.MAX_NETTY_THREADS ? CacheBuilder.MAX_NETTY_THREADS : numThreads;
 	}
 
 	/**

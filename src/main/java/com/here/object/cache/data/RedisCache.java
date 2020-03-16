@@ -221,8 +221,7 @@ public class RedisCache<T> implements DataCache<T> {
 	@Override
 	public AtomicCounter getSharedAtomicCounter(String counterName) {
 		RAtomicLong counterValue = client.getAtomicLong(CACHE_KEY_APPENDER + counterName + RedisCache.SHARED_COUNTER);
-		AtomicCounter counter = new AtomicCounter(counterValue);
-		return counter;
+		return new AtomicCounter(counterValue);
 	}
 
 	/**
@@ -233,8 +232,7 @@ public class RedisCache<T> implements DataCache<T> {
 	 */
 	@Override
 	public Set<T> getSet(String setName) {
-		Set<T> set = new CacheSet<>(client.getSet(CACHE_KEY_APPENDER + setName));
-		return set;
+		return new CacheSet<>(client.getSet(CACHE_KEY_APPENDER + setName));
 	}
 
 	/**
@@ -245,8 +243,7 @@ public class RedisCache<T> implements DataCache<T> {
 	 */
 	@Override
 	public List<T> getList(String listName) {
-		List<T> list = new CacheList<>(client.getList(CACHE_KEY_APPENDER + listName));
-		return list;
+		return new CacheList<>(client.getList(CACHE_KEY_APPENDER + listName));
 	}
 
 	@Override
@@ -318,7 +315,7 @@ public class RedisCache<T> implements DataCache<T> {
 	        config.useSingleServer().setRetryInterval(2000);
 		}
 		else {
-			config.useClusterServers().addNodeAddress((String[]) cacheConfig.getRedisServers().toArray(new String[cacheConfig.getRedisServers().size()]));
+			config.useClusterServers().addNodeAddress(cacheConfig.getRedisServers().toArray(new String[cacheConfig.getRedisServers().size()]));
 			config.useClusterServers().setRetryAttempts(Integer.MAX_VALUE);
 	        config.useClusterServers().setTimeout(10000);
 	        config.useClusterServers().setMasterConnectionPoolSize(50);
@@ -331,7 +328,7 @@ public class RedisCache<T> implements DataCache<T> {
 	private RedissonClient buildRedissonClient() {
 		String clientKey= this.cacheConfig.getRedisServers().stream().sorted().collect(Collectors.joining(";;"));
 		RedissonClient client= clientHolder.get(clientKey);
-		if(client!=null && client.getNodesGroup().pingAll()) 
+		if(client!=null && client.getNodesGroup().pingAll())
 			return client;
 		else {
 			client= Redisson.create(this.redissonConfig);

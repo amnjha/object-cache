@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.here</groupId>
 	<artifactId>object-cache</artifactId>
-	<version>1.3.2.2</version>
+	<version>1.4.0</version>
 	<name>Object Cache</name>
 	<description>Library for caching objects to share between different JVM instances</description>
 
@@ -35,7 +35,7 @@
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>25.1-jre</version>
+			<version>28.2-jre</version>
 		</dependency>
 
 		<!-- Support for AWS Elasticache -->
