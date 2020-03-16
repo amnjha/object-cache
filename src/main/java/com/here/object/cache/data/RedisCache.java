@@ -309,19 +309,19 @@ public class RedisCache<T> implements DataCache<T> {
 		
 		if(cacheConfig.getRedisConnectionType().equals(RedisConnectionType.SINGLE_SERVER)) {
 			config.useSingleServer().setAddress(cacheConfig.getRedisServers().get(0));
-			config.useSingleServer().setRetryAttempts(Integer.MAX_VALUE);
+			config.useSingleServer().setRetryAttempts(3);
 	        config.useSingleServer().setTimeout(10000);
 	        config.useSingleServer().setConnectionPoolSize(50);
 	        config.useSingleServer().setRetryInterval(2000);
 		}
 		else {
 			config.useClusterServers().addNodeAddress(cacheConfig.getRedisServers().toArray(new String[cacheConfig.getRedisServers().size()]));
-			config.useClusterServers().setRetryAttempts(Integer.MAX_VALUE);
+			config.useClusterServers().setRetryAttempts(3);
 	        config.useClusterServers().setTimeout(10000);
 	        config.useClusterServers().setMasterConnectionPoolSize(50);
 	        config.useClusterServers().setRetryInterval(2000);
 		}
-        
+
 		return config;
 	}
 
