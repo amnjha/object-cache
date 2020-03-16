@@ -33,6 +33,7 @@ public class CacheBuilder {
 	private boolean useSSL;
 	private String cacheId;
 	private Serializer serializer;
+	private int numThreads = 32;
 
 	private CacheBuilder() {
 	}
@@ -102,6 +103,11 @@ public class CacheBuilder {
 		return this;
 	}
 
+	public CacheBuilder withNumThreads(int numThreads){
+		this.numThreads = numThreads;
+		return this;
+	}
+
 	private ObjectCacheClientConfig buildConfig() {
 		ObjectCacheClientConfig config = null;
 
@@ -126,6 +132,7 @@ public class CacheBuilder {
 				if (serializer != null)
 					config.useRedisCache().withCustomSerializer(serializer);
 
+				config.useRedisCache().setNumThreads(this.numThreads);
 				return config;
 
 			case CLUSTER_MODE_REDIS_CACHE:
@@ -142,6 +149,7 @@ public class CacheBuilder {
 				if (serializer != null)
 					config.useRedisCache().withCustomSerializer(serializer);
 
+				config.useRedisCache().setNumThreads(this.numThreads);
 				return config;
 
 			case AWS_ELASTICACHE:
@@ -157,6 +165,7 @@ public class CacheBuilder {
 				if (serializer != null)
 					config.useRedisCache().withCustomSerializer(serializer);
 
+				config.useRedisCache().setNumThreads(this.numThreads);
 				return config;
 
 			default:

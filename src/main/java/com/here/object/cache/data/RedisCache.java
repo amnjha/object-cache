@@ -18,6 +18,7 @@ import com.here.object.cache.data.collections.CacheList;
 import com.here.object.cache.data.collections.CacheSet;
 import com.here.object.cache.exceptions.NonUniqueKeyException;
 import com.here.object.cache.exceptions.ObjectNotSerialzableException;
+import org.redisson.config.TransportMode;
 
 /**
  * 
@@ -306,6 +307,8 @@ public class RedisCache<T> implements DataCache<T> {
 
 	private Config generateRedissonConfig() {
 		Config config= new Config();
+		config.setTransportMode(TransportMode.NIO);
+		config.setNettyThreads(cacheConfig.getNumThreads());
 		
 		if(cacheConfig.getRedisConnectionType().equals(RedisConnectionType.SINGLE_SERVER)) {
 			config.useSingleServer().setAddress(cacheConfig.getRedisServers().get(0));

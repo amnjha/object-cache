@@ -31,6 +31,7 @@ public class RedisCacheConfig implements CacheConfig{
 	private boolean enableLocalCaching;
 	private int localCacheSize;
 	private long expirationInMs;
+	private int numThreads;
 	private Serializer serializer = new ByteSerializer();
 
 
@@ -157,6 +158,19 @@ public class RedisCacheConfig implements CacheConfig{
 	 */
 	public int getLocalCacheSize() {
 		return localCacheSize;
+	}
+
+	/**
+	 * Set the number of netty threads to be used for Redis Transport
+	 * Min Value is 32, even if you set the value to a lower value, 32 threads will be used
+	 * @param numThreads
+	 */
+	public void setNumThreads(int numThreads) {
+		this.numThreads = numThreads;
+	}
+
+	public int getNumThreads() {
+		return numThreads > 32 ? numThreads : 32;
 	}
 
 	/**
