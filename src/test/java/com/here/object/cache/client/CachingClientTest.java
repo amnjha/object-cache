@@ -210,4 +210,34 @@ public class CachingClientTest {
 		String value = "TEST_VALUE";
 		Assert.assertEquals(cache.get(value), value);
 	}
+
+	@Test
+	public void testDBIndex(){
+		ServerAddress serverAddress = new ServerAddress("localhost", redisServerPort, false, 0);
+		DataCache<String> cache = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
+								.withServerAddress(serverAddress).build();
+
+		String key = "TEST_KEY";
+		String value = "TEST_VALUE";
+		cache.store(key, value);
+		Assert.assertEquals(value, cache.get(key));
+	}
+
+	@Test
+	public void testDBIndexExclusivity(){
+		ServerAddress serverAddress_0 = new ServerAddress("localhost", redisServerPort, false, 0);
+		ServerAddress serverAddress_1 = new ServerAddress("localhost", redisServerPort, false, 1);
+
+		DataCache<String> cache_0 = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
+				.withServerAddress(serverAddress_0).withCacheId("my-cache").build();
+
+		DataCache<String> cache_1 = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
+				.withServerAddress(serverAddress_1).withCacheId("my-cache").build();
+
+		String key = "TEST_KEY";
+		String value = "TEST_VALUE";
+		cache_0.store(key, value);
+		Assert.assertNotEquals(value, cache_1.get(key));
+		Assert.assertNull(cache_1.get(key));
+	}
 }
