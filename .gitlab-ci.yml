@@ -6,4 +6,4 @@ before_script:
 
 build:
   script:
-    - mvn clean install -DskipTests --no-transfer-progress
+    - mvn clean install --no-transfer-progress

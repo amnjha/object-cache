@@ -240,4 +240,28 @@ public class CachingClientTest {
 		Assert.assertNotEquals(value, cache_1.get(key));
 		Assert.assertNull(cache_1.get(key));
 	}
+
+	@Test
+	public void testDBIndexExclusivity2(){
+		ServerAddress serverAddress_0 = new ServerAddress("localhost", redisServerPort, false, 0);
+		ServerAddress serverAddress_1 = new ServerAddress("localhost", redisServerPort, false, 1);
+
+		DataCache<String> cache_0 = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
+				.withServerAddress(serverAddress_0).withCacheId("my-cache").build();
+
+		DataCache<String> cache_1 = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
+				.withServerAddress(serverAddress_1).withCacheId("my-cache").build();
+
+		String key = "TEST_KEY";
+		String value1 = "TEST_VALUE_1";
+		String value2 = "TEST_VALUE_2";
+		cache_0.store(key, value1);
+		cache_1.store(key, value2);
+
+		Assert.assertEquals(value1, cache_0.get(key));
+		Assert.assertNotEquals(value2, cache_0.get(key));
+
+		Assert.assertEquals(value2, cache_1.get(key));
+		Assert.assertNotEquals(value1, cache_1.get(key));
+	}
 }
