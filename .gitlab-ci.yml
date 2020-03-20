@@ -1,0 +1,9 @@
+image: "maven:3.6-jdk-8"
+
+before_script:
+  - java -version
+  - mvn --version
+
+build:
+  script:
+    - mvn clean install -DskipTests --no-transfer-progress
