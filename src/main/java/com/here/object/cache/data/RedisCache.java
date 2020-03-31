@@ -264,10 +264,23 @@ public class RedisCache<T> implements DataCache<T> {
 		return keyList;
 	}
 
+	/**
+	 * Delete multiple objects by a key pattern.
+	 * <p>
+	 * Method executes in <b>NON atomic way</b> in cluster mode due to lua script limitations.
+	 * <p>
+	 *  Supported glob-style patterns:
+	 *    h?llo subscribes to hello, hallo and hxllo
+	 *    h*llo subscribes to hllo and heeeello
+	 *    h[ae]llo subscribes to hello and hallo, but not hillo
+	 *
+	 * @param keyPattern - match pattern
+	 * @return number of removed keys
+	 */
 	@Override
 	public long deleteByKeyPattern(String keyPattern){
 		RKeys keys= client.getKeys();
-		return keys.deleteByPattern(keyPattern);
+		return keys.deleteByPattern(cacheId + keyPattern);
 	}
 
 	@Override
