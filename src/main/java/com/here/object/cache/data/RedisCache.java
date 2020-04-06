@@ -349,14 +349,21 @@ public class RedisCache<T> implements DataCache<T> {
 			return client;
 		}
 	}
-	
-	@Override
-	protected void finalize() throws Throwable {
-		super.finalize();
+
+	/**
+	 * Closes all connections to the Redis Cache
+	 */
+	public void closeClient(){
 		if(localCache!=null)
 			this.localCache.deleteCacheReference();
 
 		client.shutdown();
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		super.finalize();
+		closeClient();
 	}
 	
 }
