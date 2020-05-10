@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.here</groupId>
 	<artifactId>object-cache</artifactId>
-	<version>2.0.2</version>
+	<version>2.0.3</version>
 	<name>Object Cache</name>
 	<description>Library for caching objects to share between different JVM instances</description>
 
