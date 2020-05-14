@@ -162,8 +162,8 @@ public class RedisCache<T> implements DataCache<T> {
 	}
 
 	@Override
-	public Iterator<String> getKeyIterator() {
-		return client.getKeys().getKeysByPattern(CACHE_KEY_APPENDER).iterator();
+	public Iterator<String> getKeyIterator(int fetchSize) {
+		return client.getKeys().getKeysByPattern(CACHE_KEY_APPENDER, fetchSize).iterator();
 	}
 
 

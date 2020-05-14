@@ -225,7 +225,7 @@ public class LocalCache<T>  implements DataCache<T>{
 	}
 
 	@Override
-	public Iterator<String> getKeyIterator() {
+	public Iterator<String> getKeyIterator(int fetchSize) {
 		throw new RuntimeException("Method not supported on local cache");
 	}
 

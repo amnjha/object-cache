@@ -105,7 +105,7 @@ public class CachingClientTest {
 		cache.store("test1", "test_1");
 		cache.store("test2", "test_2");
 		List<String> expectedList = Arrays.asList("test1","test2");
-		final Iterator<String> keyIterator = cache.getKeyIterator();
+		final Iterator<String> keyIterator = cache.getKeyIterator(2);
 		while(keyIterator.hasNext()){
 			Assert.assertTrue(expectedList.contains(keyIterator.next()));
 		}

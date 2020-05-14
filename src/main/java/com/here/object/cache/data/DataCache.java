@@ -114,7 +114,7 @@ public interface DataCache<T> {
 
     long deleteByKeys(String... keys);
 
-	Iterator<String> getKeyIterator();
+	Iterator<String> getKeyIterator(int fetchSize);
 
 
     public default void purgeCache(){
