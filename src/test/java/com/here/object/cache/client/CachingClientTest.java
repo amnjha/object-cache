@@ -1,8 +1,7 @@
 package com.here.object.cache.client;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -94,6 +93,24 @@ public class CachingClientTest {
 		cache.deleteIfPresent("map");
 		testMap= cache.get("map");
 		Assert.assertNull("Deletion was unsuccessful, fetched non-null result", testMap);
+	}
+
+	@Test
+	public void remoteCacheIteratorTest() throws Exception {
+		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig(new ServerAddress("localhost", redisServerPort, false));
+		clientConfig.useRedisCache();
+
+		CachingClient<String> cacheClient = new CachingClient<>(clientConfig);
+		DataCache<String> cache = cacheClient.getCache();
+		cache.store("test1", "test_1");
+		cache.store("test2", "test_2");
+		List<String> expectedList = Arrays.asList("test1","test2");
+		final Iterator<String> keyIterator = cache.getKeyIterator();
+		while(keyIterator.hasNext()){
+			Assert.assertTrue(expectedList.contains(keyIterator.next()));
+		}
+		cache.deleteIfPresent("test1");
+		cache.deleteIfPresent("test2");
 	}
 	
 	@SuppressWarnings("unchecked")

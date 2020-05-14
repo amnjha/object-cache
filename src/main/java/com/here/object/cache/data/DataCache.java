@@ -1,5 +1,6 @@
 package com.here.object.cache.data;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -112,6 +113,9 @@ public interface DataCache<T> {
     long deleteByKeyPattern(String keyPattern);
 
     long deleteByKeys(String... keys);
+
+	Iterator<String> getKeyIterator();
+
 
     public default void purgeCache(){
 		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");

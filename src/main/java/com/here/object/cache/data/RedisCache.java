@@ -161,6 +161,13 @@ public class RedisCache<T> implements DataCache<T> {
 		return null;
 	}
 
+	@Override
+	public Iterator<String> getKeyIterator() {
+		return client.getKeys().getKeysByPattern(CACHE_KEY_APPENDER).iterator();
+	}
+
+
+
 	public T getFromRemote(String key){
 		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 		if(binStream.isExists())
