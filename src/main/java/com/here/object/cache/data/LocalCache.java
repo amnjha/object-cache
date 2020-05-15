@@ -5,6 +5,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -226,6 +227,11 @@ public class LocalCache<T>  implements DataCache<T>{
 
 	@Override
 	public Iterator<String> getKeyIterator(int fetchSize) {
+		throw new RuntimeException("Method not supported on local cache");
+	}
+
+	@Override
+	public Stream<String> getKeysStreamByPattern(int fetchSize) {
 		throw new RuntimeException("Method not supported on local cache");
 	}
 

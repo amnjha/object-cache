@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import com.here.object.cache.builder.CacheBuilder;
 import com.here.object.cache.exceptions.NonUniqueKeyException;
@@ -115,6 +116,8 @@ public interface DataCache<T> {
     long deleteByKeys(String... keys);
 
 	Iterator<String> getKeyIterator(int fetchSize);
+
+	Stream<String> getKeysStreamByPattern(int fetchSize);
 
 
     public default void purgeCache(){
