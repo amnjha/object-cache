@@ -107,17 +107,42 @@ public interface DataCache<T> {
 		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
 	}
 
+	/**
+	 * Get All Keys Stored in the Redis
+	 * @return
+	 */
     List<String> getAllKeys();
 
-    List<String> getKeyListByPattern(String keyPattern);
+	/**
+	 * Get Keys stored in the redis by a given pattern
+	 * @param keyPattern
+	 * @return
+	 */
+	List<String> getKeyListByPattern(String keyPattern);
 
+	/**
+	 *
+	 * @param keyPattern
+	 * @return
+	 */
     long deleteByKeyPattern(String keyPattern);
 
-    long deleteByKeys(String... keys);
+	/**
+	 *
+	 * @param keys
+	 * @return
+	 */
+	long deleteByKeys(String... keys);
 
-	Iterator<String> getKeyIterator(int fetchSize);
+	/**
+	 * @return
+	 */
+	Iterator<String> getKeyIterator();
 
-	Stream<String> getKeysStreamByPattern(int fetchSize);
+	/**
+	 * @return
+	 */
+	Stream<String> getKeysStreamByPattern();
 
 
     public default void purgeCache(){

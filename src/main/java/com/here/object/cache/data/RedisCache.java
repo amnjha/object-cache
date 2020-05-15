@@ -40,7 +40,9 @@ public class RedisCache<T> implements DataCache<T> {
 	private long timeToLive =0;
 	private Function<String,T> valueLoader;
 	private Serializer serializer;
-	
+
+	private static final int FETCH_SIZE = 10;
+
 	/**
 	 * @param cacheConfig
 	 */
@@ -163,13 +165,13 @@ public class RedisCache<T> implements DataCache<T> {
 	}
 
 	@Override
-	public Iterator<String> getKeyIterator(int fetchSize) {
-		return client.getKeys().getKeysByPattern(CACHE_KEY_APPENDER, fetchSize).iterator();
+	public Iterator<String> getKeyIterator() {
+		return client.getKeys().getKeysByPattern(CACHE_KEY_APPENDER, FETCH_SIZE).iterator();
 	}
 
 	@Override
-	public Stream<String> getKeysStreamByPattern(int fetchSize) {
-		return client.getKeys().getKeysStreamByPattern(CACHE_KEY_APPENDER, fetchSize);
+	public Stream<String> getKeysStreamByPattern() {
+		return client.getKeys().getKeysStreamByPattern(CACHE_KEY_APPENDER, FETCH_SIZE);
 	}
 
 
