@@ -164,6 +164,37 @@ public class RedisCache<T> implements DataCache<T> {
 		return null;
 	}
 
+
+
+	@Override
+	public T getNonStream(String key) {
+
+		//Check whether it exists in local cache
+		if(this.cacheConfig.isEnableLocalCaching()) {
+			T t = localCache.get(key);
+			if (t != null) {
+				//if found in local cache, validate if it still exists in the remote cache
+				RBucket<T> value = client.getBucket(CACHE_KEY_APPENDER + key);
+				if (value.isExists())
+					return t;
+			}
+		}
+
+		// if not found, look in the remote cache
+		RBucket<T> value = client.getBucket(CACHE_KEY_APPENDER + key);
+		if(value.isExists())
+			return serializer.deserialize((byte[]) value.get());
+
+		// If Still not found, try to use the cache loader and load the remote cache before returning the value
+		if(valueLoader!=null && !this.cacheConfig.isEnableLocalCaching()) {
+			T t = valueLoader.apply(key);
+			Optional.ofNullable(t).ifPresent(e->store(key, e));
+			return t;
+		}
+
+		return null;
+	}
+
 	@Override
 	public Iterator<String> getKeyIterator() {
 		return client.getKeys().getKeysByPattern(CACHE_KEY_APPENDER, FETCH_SIZE).iterator();
@@ -183,15 +214,28 @@ public class RedisCache<T> implements DataCache<T> {
 		return null;
 	}
 
+	public void replace(Map<String, T> dataToInsert){
+		RBatch batch = client.createBatch();
+		dataToInsert.entrySet()
+				.parallelStream()
+				.forEach(value ->{
+					final RBucketAsync<Object> bucket = batch.getBucket(CACHE_KEY_APPENDER + value.getKey());
+					bucket.setAsync(serializer.serialize((Serializable)value.getValue()));
+				});
+		batch.execute();
+	}
+
 	@Override
 	public T replace(String key, T t) {
 		if(!(t instanceof Serializable))
 			throw new ObjectNotSerialzableException("Non-Serializable objects cannot be stored on Redis");
-		
+
 		//Replace in the local cache
 		if(this.cacheConfig.isEnableLocalCaching())
 			localCache.replace(key, t);
-		
+
+		//BatchOptions batchOptions = new BatchOptions();
+
 		//Replace in the remote cache
 		RBinaryStream binStream= client.getBinaryStream(CACHE_KEY_APPENDER + key);
 

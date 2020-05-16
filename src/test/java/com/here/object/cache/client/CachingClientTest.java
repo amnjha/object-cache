@@ -112,6 +112,31 @@ public class CachingClientTest {
 		cache.deleteIfPresent("test1");
 		cache.deleteIfPresent("test2");
 	}
+
+	@Test
+	public void remoteCacheBatchInsert() throws Exception {
+		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig(new ServerAddress("localhost", redisServerPort, false));
+		clientConfig.useRedisCache();
+
+		CachingClient<String> cacheClient = new CachingClient<>(clientConfig);
+		DataCache<String> cache = cacheClient.getCache();
+		cache.purgeCache();
+		Map<String, String> testMap= new HashMap<>();
+		testMap.put("key", "value");
+		testMap.put("key1", "value1");
+		cache.replace(testMap);
+		List<String> expectedKeyList = Arrays.asList("key","key1");
+		List<String> expectedValueList = Arrays.asList("value","value1");
+
+		cache.getAllKeys()
+				.stream()
+				.forEach(key->{
+					Assert.assertTrue(expectedKeyList.contains(key));
+					Assert.assertTrue(expectedValueList.contains(cache.getNonStream(key)));
+				});
+		cache.deleteIfPresent("key");
+		cache.deleteIfPresent("key1");
+	}
 	
 	@SuppressWarnings("unchecked")
 	@Test

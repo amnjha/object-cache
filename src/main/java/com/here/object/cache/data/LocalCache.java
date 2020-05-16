@@ -226,6 +226,11 @@ public class LocalCache<T>  implements DataCache<T>{
 	}
 
 	@Override
+	public T getNonStream(String key) {
+		return null;
+	}
+
+	@Override
 	public Iterator<String> getKeyIterator() {
 		throw new AbstractMethodError("Method not supported on local cache");
 	}
@@ -233,6 +238,11 @@ public class LocalCache<T>  implements DataCache<T>{
 	@Override
 	public Stream<String> getKeysStreamByPattern() {
 		throw new AbstractMethodError("Method not supported on local cache");
+	}
+
+	@Override
+	public void replace(Map<String, T> dataToInsert) {
+		throw new RuntimeException("Method not supported on local cache");
 	}
 
 

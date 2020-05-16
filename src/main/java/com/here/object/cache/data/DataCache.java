@@ -2,6 +2,7 @@ package com.here.object.cache.data;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -49,6 +50,8 @@ public interface DataCache<T> {
 	 * @return The fetched object from the cache
 	 */
 	public T get(String key);
+
+	public T getNonStream(String key);
 	
 	/**
 	 * Replace the value stored in the cache with the new Value. New Object is created in the cache if the key does not exist already
@@ -144,6 +147,7 @@ public interface DataCache<T> {
 	 */
 	Stream<String> getKeysStreamByPattern();
 
+	public void replace(Map<String, T> dataToInsert);
 
     public default void purgeCache(){
 		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
