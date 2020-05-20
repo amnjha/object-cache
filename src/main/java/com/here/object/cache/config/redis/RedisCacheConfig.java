@@ -26,7 +26,7 @@ public class RedisCacheConfig implements CacheConfig{
 	}
 
 	private String cacheId;
-	private final List<String> redisServers;
+	private final List<ServerAddress> redisServers;
 	private final RedisConnectionType redisConnectionType;
 	private final CachingMode cachingMode;
 	private boolean enableLocalCaching;
@@ -46,7 +46,7 @@ public class RedisCacheConfig implements CacheConfig{
 		if(serverCount<1)
 			throw new InvalidConfigException("At-least one server is required while using the redis caching mode");
 
-		redisServers = Arrays.stream(servers).map(ServerAddress::getConnectionString).collect(toList());
+		redisServers = Arrays.stream(servers).collect(toList());
 		redisConnectionType= serverCount>1?RedisConnectionType.CLUSTER_CONNECTION:RedisConnectionType.SINGLE_SERVER;
 		this.cachingMode= cachingMode;
 		this.enableLocalCaching=false;
@@ -63,7 +63,7 @@ public class RedisCacheConfig implements CacheConfig{
 		if(serverCount<1) 
 			throw new InvalidConfigException("At-least one server is required while using the redis caching mode");
 		
-		redisServers = Arrays.stream(servers).map(ServerAddress::getConnectionString).collect(toList());
+		redisServers = Arrays.stream(servers).collect(toList());
 		redisConnectionType= serverCount>1?RedisConnectionType.CLUSTER_CONNECTION:RedisConnectionType.SINGLE_SERVER;
 		this.cachingMode= cachingMode;
 		this.enableLocalCaching=enableLocalCaching;
@@ -82,7 +82,7 @@ public class RedisCacheConfig implements CacheConfig{
 			throw new InvalidConfigException("At-least one server is required while using the redis caching mode");
 
 		this.cacheId = cacheId;
-		redisServers = Arrays.stream(servers).map(ServerAddress::getConnectionString).collect(toList());
+		redisServers = Arrays.stream(servers).collect(toList());
 		redisConnectionType= serverCount > 1 ? RedisConnectionType.CLUSTER_CONNECTION:RedisConnectionType.SINGLE_SERVER;
 		this.cachingMode= cachingMode;
 		this.enableLocalCaching=enableLocalCaching;
@@ -121,7 +121,7 @@ public class RedisCacheConfig implements CacheConfig{
 	/**
 	 * @return the redisServers
 	 */
-	public List<String> getRedisServers() {
+	public List<ServerAddress> getRedisServers() {
 		return redisServers;
 	}
 

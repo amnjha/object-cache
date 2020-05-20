@@ -44,10 +44,9 @@ public class CachingClient<T> {
 				cache = new LocalCache<>(localCacheConfig);
 		}
 
-		// Add support for cache ID in the Redis---- Required?
 		else if(CachingMode.STAND_ALONE_REDIS_CACHE.equals(clientConfig.getCachingMode())|| CachingMode.AWS_ELASTICACHE.equals(clientConfig.getCachingMode())) {
 			RedisCacheConfig redisCacheConfig= (RedisCacheConfig) clientConfig.getCacheConfig();
-			redisCacheConfig.setCacheId(cache_id);
+			redisCacheConfig.setCacheId(redisCacheConfig.getCacheId()!=null? redisCacheConfig.getCacheId() : cache_id);
 			cache= new RedisCache<>(redisCacheConfig);
 		}
 		return this.cache;

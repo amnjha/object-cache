@@ -13,6 +13,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.here.object.cache.config.local.LocalCacheConfig;
 import com.here.object.cache.exceptions.NonUniqueKeyException;
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -226,27 +227,6 @@ public class LocalCache<T>  implements DataCache<T>{
 	}
 
 	@Override
-	public T getNonStream(String key) {
-		return null;
-	}
-
-	@Override
-	public Iterator<String> getKeyIterator() {
-		throw new AbstractMethodError("Method not supported on local cache");
-	}
-
-	@Override
-	public Stream<String> getKeysStreamByPattern() {
-		throw new AbstractMethodError("Method not supported on local cache");
-	}
-
-	@Override
-	public void replace(Map<String, T> dataToInsert) {
-		throw new RuntimeException("Method not supported on local cache");
-	}
-
-
-	@Override
 	public T replace(String key, T t) {
 		localCache.put(key, t);
 		return t;
@@ -309,6 +289,11 @@ public class LocalCache<T>  implements DataCache<T>{
 			}
 		}
 		return deleteCount;
+	}
+
+	@Override
+	public Mono<Long> deleteByKeysAsync(String... keys) {
+		throw new AbstractMethodError("Method Unavailable in Local Cache");
 	}
 
 	@Override

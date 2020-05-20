@@ -1,5 +1,7 @@
 package com.here.object.cache.config.redis;
 
+import io.lettuce.core.RedisURI;
+
 /**
  * 
  * @author amajha
@@ -9,7 +11,8 @@ public class ServerAddress{
 	private String host;
 	private int port;
 	private String connectionString;
-	private int database;
+	private boolean isSSL;
+	private int database = -1;
 	
 	/**
 	 * @param host host-name of the server to connect
@@ -20,6 +23,7 @@ public class ServerAddress{
 		super();
 		this.host = host;
 		this.port = port;
+		this.isSSL = isSSL;
 		this.connectionString="redis"+(isSSL?"s":"")+"://"+host+":"+port;
 	}
 
@@ -32,12 +36,10 @@ public class ServerAddress{
 	public ServerAddress(String host, int port, boolean isSSL, int database) {
 		super();
 
-		if(database < 0 || database >=16){
-			throw new IllegalArgumentException("Database Index can be between 0 and 15");
-		}
-
 		this.host = host;
 		this.port = port;
+		this.isSSL = isSSL;
+		this.database = database;
 		this.connectionString="redis"+(isSSL?"s":"")+"://"+host+":"+port+"/"+database;
 	}
 
@@ -60,6 +62,14 @@ public class ServerAddress{
 	 */
 	public String getConnectionString() {
 		return connectionString;
+	}
+
+	public RedisURI getRedisURI(){
+		RedisURI.Builder redisUriBuilder = RedisURI.builder().withHost(getHost()).withPort(getPort()).withSsl(isSSL);
+		if(database != -1)
+			redisUriBuilder.withDatabase(database);
+
+		return redisUriBuilder.build();
 	}
 
 	public int getDatabase() {

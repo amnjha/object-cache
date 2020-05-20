@@ -1,116 +1,108 @@
 package com.here.object.cache.client;
 
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-
-import org.junit.*;
-import org.mockito.Mockito;
-
 import com.amazonaws.services.elasticache.AmazonElastiCacheClient;
-import com.amazonaws.services.elasticache.model.CacheCluster;
-import com.amazonaws.services.elasticache.model.CacheNode;
-import com.amazonaws.services.elasticache.model.DescribeCacheClustersRequest;
-import com.amazonaws.services.elasticache.model.DescribeCacheClustersResult;
-import com.amazonaws.services.elasticache.model.Endpoint;
+import com.amazonaws.services.elasticache.model.*;
 import com.here.object.cache.builder.CacheBuilder;
 import com.here.object.cache.config.CachingMode;
 import com.here.object.cache.config.ObjectCacheClientConfig;
 import com.here.object.cache.config.redis.ServerAddress;
 import com.here.object.cache.data.DataCache;
 import com.here.object.cache.data.RedisCache;
-
+import io.lettuce.core.KeyScanCursor;
+import io.lettuce.core.RedisURI;
+import io.lettuce.core.ScanArgs;
+import io.lettuce.core.ScanCursor;
+import io.lettuce.core.cluster.RedisClusterClient;
+import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
+import io.lettuce.core.cluster.api.reactive.RedisAdvancedClusterReactiveCommands;
+import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
+import org.junit.*;
+import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
 import redis.embedded.RedisServer;
+
+import java.lang.reflect.Field;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 
 public class CachingClientTest {
 
+	private static final int redisServerPort = 32769;
+	private static final Logger LOGGER = LoggerFactory.getLogger(CachingClient.class);
 	private static RedisServer redisServer;
-	private static final int redisServerPort= 32769;
-	
+
 	@BeforeClass
 	public static void setUp() throws Exception {
-		redisServer= new RedisServer(redisServerPort);
+		redisServer = new RedisServer(redisServerPort);
 		redisServer.start();
 	}
 
 	@AfterClass
 	public static void tearDown() throws Exception {
 		redisServer.stop();
-		redisServer=null;
+		redisServer = null;
 	}
-	
+
 	@Test
 	public void localCacheTest() {
-		Map<String, String> testMap= new HashMap<>();
+		Map<String, String> testMap = new HashMap<>();
 		testMap.put("key", "value");
 		testMap.put("key1", "value1");
-		
+
 		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig();
 		CachingClient<Map<String, String>> cacheClient = new CachingClient<>(clientConfig);
-		
+
 		DataCache<Map<String, String>> cache = cacheClient.getCache();
 		cache.store("map", testMap);
-		
-		testMap= cache.get("map");
+
+		testMap = cache.get("map");
 		Assert.assertNotNull("Storage was unsuccessful, fetched empty result", testMap);
-		
+
 		Assert.assertEquals(2, testMap.size());
-		
+
 		cache.deleteIfPresent("map");
-		testMap= cache.get("map");
+		testMap = cache.get("map");
 		Assert.assertNull("Deletion was unsuccessful, fetched non-null result", testMap);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Test
 	public void remoteCacheTest() throws Exception {
-		Map<String, String> testMap= new HashMap<>();
+		Map<String, String> testMap = new HashMap<>();
 		testMap.put("key", "value");
 		testMap.put("key1", "value1");
-		
+
 		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig(new ServerAddress("localhost", redisServerPort, false));
 		clientConfig.useRedisCache().withLocalCache();
+		clientConfig.useRedisCache().setCacheId("my-cache");
 
 		CachingClient<Map<String, String>> cacheClient = new CachingClient<>(clientConfig);
-		
+
 		DataCache<Map<String, String>> cache = cacheClient.getCache();
 		cache.store("map", testMap);
-		
+
 		//Delete from Local Cache to force fetching from remote cache
-		RedisCache<Map<String, String>> redisCache= (RedisCache<Map<String, String>>) cache;
-		Field localCacheField= RedisCache.class.getDeclaredField("localCache");
+		RedisCache<Map<String, String>> redisCache = (RedisCache<Map<String, String>>) cache;
+		Field localCacheField = RedisCache.class.getDeclaredField("localCache");
 		localCacheField.setAccessible(true);
-		DataCache<Map<String, String>> localCache= (DataCache<Map<String, String>>) localCacheField.get(redisCache);
+		DataCache<Map<String, String>> localCache = (DataCache<Map<String, String>>) localCacheField.get(redisCache);
 		localCache.deleteIfPresent("map");
-		
-		testMap= cache.get("map");
+
+		testMap = cache.get("map");
 		Assert.assertNotNull("Storage was unsuccessful, fetched empty result", testMap);
-		
+
 		Assert.assertEquals(2, testMap.size());
-		
+
 		cache.deleteIfPresent("map");
-		testMap= cache.get("map");
+		testMap = cache.get("map");
 		Assert.assertNull("Deletion was unsuccessful, fetched non-null result", testMap);
-	}
-
-	@Test
-	public void remoteCacheIteratorTest() throws Exception {
-		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig(new ServerAddress("localhost", redisServerPort, false));
-		clientConfig.useRedisCache();
-
-		CachingClient<String> cacheClient = new CachingClient<>(clientConfig);
-		DataCache<String> cache = cacheClient.getCache();
-		cache.store("test1", "test_1");
-		cache.store("test2", "test_2");
-		List<String> expectedList = Arrays.asList("test1","test2");
-		final Iterator<String> keyIterator = cache.getKeyIterator();
-		while(keyIterator.hasNext()){
-			Assert.assertTrue(expectedList.contains(keyIterator.next()));
-		}
-		cache.deleteIfPresent("test1");
-		cache.deleteIfPresent("test2");
 	}
 
 	@Test
@@ -121,104 +113,104 @@ public class CachingClientTest {
 		CachingClient<String> cacheClient = new CachingClient<>(clientConfig);
 		DataCache<String> cache = cacheClient.getCache();
 		cache.purgeCache();
-		Map<String, String> testMap= new HashMap<>();
+		Map<String, String> testMap = new HashMap<>();
 		testMap.put("key", "value");
 		testMap.put("key1", "value1");
-		cache.replace(testMap);
-		List<String> expectedKeyList = Arrays.asList("key","key1");
-		List<String> expectedValueList = Arrays.asList("value","value1");
+		cache.storeBatch(testMap, 5, TimeUnit.SECONDS);
+		List<String> expectedKeyList = Arrays.asList("key", "key1");
+		List<String> expectedValueList = Arrays.asList("value", "value1");
 
 		cache.getAllKeys()
 				.stream()
-				.forEach(key->{
+				.forEach(key -> {
 					Assert.assertTrue(expectedKeyList.contains(key));
-					Assert.assertTrue(expectedValueList.contains(cache.getNonStream(key)));
+					Assert.assertTrue(expectedValueList.contains(cache.get(key)));
 				});
 		cache.deleteIfPresent("key");
 		cache.deleteIfPresent("key1");
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testLocalCacheWithinRemoteCache() throws Exception {
-		String testValue=new String("TEST_OBJECT");
-		String key="key";
-		
+		String testValue = "TEST_OBJECT";
+		String key = "key";
+
 		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig(new ServerAddress("localhost", redisServerPort, false));
 		clientConfig.useRedisCache().withLocalCache();
 
 		CachingClient<String> cacheClient = new CachingClient<>(clientConfig);
-		
+
 		DataCache<String> cache = cacheClient.getCache();
 		cache.store(key, testValue);
-		
-		boolean sameObject=testValue==cache.get(key);
+
+		boolean sameObject = testValue == cache.get(key);
 		Assert.assertTrue(sameObject);
-		
+
 		//Delete from Local Cache to force fetching from remote cache
-		RedisCache<String> redisCache= (RedisCache<String>) cache;
-		Field localCacheField= RedisCache.class.getDeclaredField("localCache");
+		RedisCache<String> redisCache = (RedisCache<String>) cache;
+		Field localCacheField = RedisCache.class.getDeclaredField("localCache");
 		localCacheField.setAccessible(true);
-		DataCache<String> localCache= (DataCache<String>) localCacheField.get(redisCache);
+		DataCache<String> localCache = (DataCache<String>) localCacheField.get(redisCache);
 		localCache.deleteIfPresent(key);
-		
-		sameObject=testValue==cache.get(key);
+
+		sameObject = testValue == cache.get(key);
 		Assert.assertFalse(sameObject);
-		
+
 		cache.deleteIfPresent(key);
-		testValue=cache.get(key);
+		testValue = cache.get(key);
 		Assert.assertNull("Deletion was unsuccessful, fetched non-null result", testValue);
 	}
 
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testAmazonElasticache() throws Exception {
-		 String testValue=new String("TEST_OBJECT");
-		 String key="key";
-		
-		 AmazonElastiCacheClient amazonElastiCacheClient = Mockito.mock(AmazonElastiCacheClient.class);
-		 DescribeCacheClustersRequest sampleCacheOneLogical = new DescribeCacheClustersRequest().withCacheClusterId("sampleCacheOneLogical");
-		 sampleCacheOneLogical.setShowCacheNodeInfo(true);
-		 
-		 Mockito.when(amazonElastiCacheClient.describeCacheClusters(sampleCacheOneLogical)).
-         		 thenReturn(new DescribeCacheClustersResult().
-         				 			withCacheClusters(new CacheCluster().
-         				 			withCacheNodes(new CacheNode()
-         				 					.withEndpoint(new Endpoint().withAddress("localhost")
-         				 					.withPort(redisServerPort)))));
-		 
+		String testValue = "TEST_OBJECT";
+		String key = "key";
+
+		AmazonElastiCacheClient amazonElastiCacheClient = Mockito.mock(AmazonElastiCacheClient.class);
+		DescribeCacheClustersRequest sampleCacheOneLogical = new DescribeCacheClustersRequest().withCacheClusterId("sampleCacheOneLogical");
+		sampleCacheOneLogical.setShowCacheNodeInfo(true);
+
+		Mockito.when(amazonElastiCacheClient.describeCacheClusters(sampleCacheOneLogical)).
+				thenReturn(new DescribeCacheClustersResult().
+						withCacheClusters(new CacheCluster().
+								withCacheNodes(new CacheNode()
+										.withEndpoint(new Endpoint().withAddress("localhost")
+												.withPort(redisServerPort)))));
+
 		ObjectCacheClientConfig clientConfig = new ObjectCacheClientConfig(amazonElastiCacheClient, "sampleCacheOneLogical", false);
 		clientConfig.useRedisCache().withLocalCache();
 
 		CachingClient<String> cacheClient = new CachingClient<>(clientConfig);
-		
+
 		DataCache<String> cache = cacheClient.getCache();
 		cache.store(key, testValue);
-		
-		boolean sameObject=testValue==cache.get(key);
+
+		boolean sameObject = testValue == cache.get(key);
 		Assert.assertTrue(sameObject);
-		
+
 		//Delete from Local Cache to force fetching from remote cache
-		RedisCache<String> redisCache= (RedisCache<String>) cache;
-		Field localCacheField= RedisCache.class.getDeclaredField("localCache");
+		RedisCache<String> redisCache = (RedisCache<String>) cache;
+		Field localCacheField = RedisCache.class.getDeclaredField("localCache");
 		localCacheField.setAccessible(true);
-		DataCache<String> localCache= (DataCache<String>) localCacheField.get(redisCache);
+		DataCache<String> localCache = (DataCache<String>) localCacheField.get(redisCache);
 		localCache.deleteIfPresent(key);
-		
+
 		sameObject = testValue == cache.get(key);
 		Assert.assertFalse(sameObject); // Check the reference is different
 
-		Assert.assertEquals(testValue,cache.get(key));
-		
+		Assert.assertEquals(testValue, cache.get(key));
+
 		cache.deleteIfPresent(key);
-		testValue=cache.get(key);
+		testValue = cache.get(key);
 		Assert.assertNull("Deletion was unsuccessful, fetched non-null result", testValue);
-		
+
 	}
 
 	@Test
 	public void remoteCacheTTLTest() throws Exception {
-		Map<String, String> testMap= new HashMap<>();
+		Map<String, String> testMap = new HashMap<>();
 		testMap.put("key", "value");
 		testMap.put("key1", "value1");
 
@@ -229,32 +221,32 @@ public class CachingClientTest {
 		DataCache<Map<String, String>> cache = cacheClient.getCache();
 		cache.store("map", testMap);
 
-		testMap= cache.get("map");
+		testMap = cache.get("map");
 		Assert.assertNotNull("Storage was unsuccessful, fetched empty result", testMap);
 
 		Assert.assertEquals(2, testMap.size());
 
 		TimeUnit.SECONDS.sleep(2);
 
-		testMap= cache.get("map");
+		testMap = cache.get("map");
 		Assert.assertNull("Object not expired after TTL, fetched non-null result", testMap);
 	}
-	
+
 	@Test
 	public void cacheLoaderTest() {
-		Function<String, String> valueSupplier = e -> e ;
+		Function<String, String> valueSupplier = e -> e;
 
 		DataCache<String> cache = CacheBuilder.newBuilder().withCachingMode(CachingMode.LOCAL_JVM_CACHE).build(valueSupplier);
-		
+
 		String value = "TEST_VALUE";
 		Assert.assertEquals(cache.get(value), value);
 	}
 
 	@Test
-	public void testDBIndex(){
+	public void testDBIndex() {
 		ServerAddress serverAddress = new ServerAddress("localhost", redisServerPort, false, 0);
 		DataCache<String> cache = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
-								.withServerAddress(serverAddress).build();
+				.withServerAddress(serverAddress).build();
 
 		String key = "TEST_KEY";
 		String value = "TEST_VALUE";
@@ -262,9 +254,8 @@ public class CachingClientTest {
 		Assert.assertEquals(value, cache.get(key));
 	}
 
-	@Ignore
 	@Test
-	public void testDBIndexExclusivity(){
+	public void testDBIndexExclusivity() {
 		ServerAddress serverAddress_0 = new ServerAddress("localhost", redisServerPort, false, 0);
 		ServerAddress serverAddress_1 = new ServerAddress("localhost", redisServerPort, false, 1);
 
@@ -281,9 +272,8 @@ public class CachingClientTest {
 		Assert.assertNull(cache_1.get(key));
 	}
 
-	@Ignore
 	@Test
-	public void testDBIndexExclusivity2(){
+	public void testDBIndexExclusivity2() {
 		ServerAddress serverAddress_0 = new ServerAddress("localhost", redisServerPort, false, 0);
 		ServerAddress serverAddress_1 = new ServerAddress("localhost", redisServerPort, false, 1);
 
