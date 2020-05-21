@@ -150,7 +150,8 @@ public interface DataCache<T> {
 	/**
 	 * Get Keys as a scan iterator
 	 * @param limit the number of keys to get
-	 * @return ScanResult, call scanResult.getNextResult() to get the next results.
+	 * @return ScanResult : the scan result pointing to the head of the result,
+	 * 						call scanResult.getNextResult() to get the next results.
 	 */
 	default RedisCache.ScanResult getAllKeys(int limit){
 		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");

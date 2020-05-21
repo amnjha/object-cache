@@ -297,8 +297,8 @@ public class CachingClientTest {
 		IntStream.range(0, 1000).mapToObj(e -> UUID.randomUUID().toString()).forEach(key -> cache.store(key, key));
 		RedisCache.ScanResult scanResult = cache.getAllKeys(100);
 		while(scanResult.hasNext()){
+			scanResult = scanResult.getNext();
 			System.out.println("Got "+ scanResult.getKeys().size() + " Keys");
-			scanResult = scanResult.getNextResult(100);
 		}
 	}
 }

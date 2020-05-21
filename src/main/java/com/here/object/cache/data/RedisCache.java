@@ -317,7 +317,7 @@ public class RedisCache<T> implements DataCache<T> {
 
 	@Override
 	public ScanResult getAllKeys(int limit) {
-		return getAllKeys(ScanCursor.INITIAL, limit);
+		return ScanResult.getInitial(this, limit);
 	}
 
 	private ScanResult getAllKeys(ScanCursor scanCursor, int limit){
@@ -330,7 +330,7 @@ public class RedisCache<T> implements DataCache<T> {
 		KeyScanCursor<String> keyScanCursor = scan.block();
 		Set<String> keys = keyScanCursor.getKeys().stream().map(e->e.replace(CACHE_KEY_APPENDER,"")).collect(Collectors.toSet());
 
-		return new ScanResult(keyScanCursor, keys, this);
+		return new ScanResult(keyScanCursor, keys, this, limit);
 	}
 
 	@Override
@@ -489,22 +489,32 @@ public class RedisCache<T> implements DataCache<T> {
 	}
 
 	public static class ScanResult{
-		private KeyScanCursor<String> keyScanCursor;
+		private ScanCursor keyScanCursor;
 		private Set<String> keys;
 		private RedisCache redisCache;
+		private int limit;
 
-		ScanResult(KeyScanCursor<String> keyScanCursor, Set<String> keys, RedisCache redisCache){
+		ScanResult(ScanCursor keyScanCursor, Set<String> keys, RedisCache redisCache, int limit){
 			this.keys = keys;
 			this.keyScanCursor = keyScanCursor;
 			this.redisCache = redisCache;
+			this.limit = limit;
+		}
+
+		static ScanResult getInitial(RedisCache redisCache, int limit){
+			return new ScanResult(ScanCursor.INITIAL, null, redisCache, limit);
 		}
 
 		public Set<String> getKeys() {
 			return keys;
 		}
 
-		public ScanResult getNextResult(int limit){
-			return redisCache.getAllKeys(this.keyScanCursor, limit);
+		public ScanResult getNext(){
+			if(!keyScanCursor.isFinished()) {
+				return redisCache.getAllKeys(this.keyScanCursor, limit);
+			} else {
+				return new ScanResult(this.keyScanCursor, null, null, limit);
+			}
 		}
 
 		public boolean hasNext(){
