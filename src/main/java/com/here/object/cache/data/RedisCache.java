@@ -312,7 +312,7 @@ public class RedisCache<T> implements DataCache<T> {
 
 	@Override
 	public ScanResult scanAllKeys(int limit) {
-		return ScanResult.getInitial(this, limit);
+		return ScanResult.getInitial(CACHE_KEY_APPENDER + "*", this, limit);
 	}
 
 	@Override
@@ -321,8 +321,6 @@ public class RedisCache<T> implements DataCache<T> {
 	}
 
 	private ScanResult scanKeyListByPattern(ScanCursor scanCursor, String keyPattern, int limit) {
-		boolean replacementRequired = !"*".equals(keyPattern);
-
 		Mono<KeyScanCursor<String>> scan;
 		if (CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(this.cacheConfig.getCachingMode()))
 			scan = clusterReactiveCommands.scan(scanCursor, ScanArgs.Builder.limit(limit).match(keyPattern));
@@ -333,11 +331,7 @@ public class RedisCache<T> implements DataCache<T> {
 		List<String> keys = keyScanCursor.getKeys();
 
 		Set<String> keySet;
-		if (replacementRequired)
-			keySet = keys.stream().map(e -> e.replaceFirst(CACHE_KEY_APPENDER, "")).collect(Collectors.toSet());
-		else
-			keySet = new HashSet<>(keys);
-
+		keySet = keys.stream().map(e -> e.replaceFirst(CACHE_KEY_APPENDER, "")).collect(Collectors.toSet());
 		return new ScanResult(keyScanCursor, keySet, keyPattern, this, limit);
 	}
 
@@ -511,10 +505,6 @@ public class RedisCache<T> implements DataCache<T> {
 			this.redisCache = redisCache;
 			this.limit = limit;
 			this.pattern = pattern;
-		}
-
-		static ScanResult getInitial(RedisCache redisCache, int limit) {
-			return new ScanResult(ScanCursor.INITIAL, null, redisCache, limit);
 		}
 
 		static ScanResult getInitial(String pattern, RedisCache redisCache, int limit) {

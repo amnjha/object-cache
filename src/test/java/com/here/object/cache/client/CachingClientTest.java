@@ -289,13 +289,38 @@ public class CachingClientTest {
 	}
 
 	@Test
-	public void testKeysScanIteration() {
+	public void testGetAllKeys(){
 		ServerAddress serverAddress = new ServerAddress("localhost", redisServerPort, false, 0);
 		DataCache<String> cache = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
-				.withServerAddress(serverAddress).build();
+				.withCacheId("aman-cache").withServerAddress(serverAddress).build();
+
+		DataCache<String> cache_2 = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
+				.withCacheId("not-aman-cache").withServerAddress(serverAddress).build();
 
 		IntStream.range(0, 1000).mapToObj(e -> UUID.randomUUID().toString()).forEach(key -> cache.store(key, key));
 		IntStream.range(0, 1000).mapToObj(e -> "test" + UUID.randomUUID().toString()).forEach(key -> cache.store(key, key));
+
+		IntStream.range(0, 1000).mapToObj(e -> UUID.randomUUID().toString()).forEach(key -> cache_2.store(key, key));
+		IntStream.range(0, 1000).mapToObj(e -> "test" + UUID.randomUUID().toString()).forEach(key -> cache_2.store(key, key));
+
+		Set<String> allKeys = cache.getAllKeys();
+		Assert.assertEquals(2000, allKeys.size());
+	}
+
+	@Test
+	public void testKeysScanIteration() {
+		ServerAddress serverAddress = new ServerAddress("localhost", redisServerPort, false, 0);
+		DataCache<String> cache = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
+				.withCacheId("hello").withServerAddress(serverAddress).build();
+
+		DataCache<String> cache_2 = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
+				.withCacheId("not-hello").withServerAddress(serverAddress).build();
+
+		IntStream.range(0, 1000).mapToObj(e -> UUID.randomUUID().toString()).forEach(key -> cache.store(key, key));
+		IntStream.range(0, 1000).mapToObj(e -> "test" + UUID.randomUUID().toString()).forEach(key -> cache.store(key, key));
+
+		IntStream.range(0, 1000).mapToObj(e -> UUID.randomUUID().toString()).forEach(key -> cache_2.store(key, key));
+		IntStream.range(0, 1000).mapToObj(e -> "test" + UUID.randomUUID().toString()).forEach(key -> cache_2.store(key, key));
 
 		RedisCache.ScanResult scanKeysByPattern = cache.scanKeysByPattern("test", 100);
 		int totalKeys = 0;
