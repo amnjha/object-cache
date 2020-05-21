@@ -25,10 +25,7 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -319,6 +316,24 @@ public class RedisCache<T> implements DataCache<T> {
 	}
 
 	@Override
+	public ScanResult getAllKeys(int limit) {
+		return getAllKeys(ScanCursor.INITIAL, limit);
+	}
+
+	private ScanResult getAllKeys(ScanCursor scanCursor, int limit){
+		Mono<KeyScanCursor<String>> scan;
+		if (CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(this.cacheConfig.getCachingMode()))
+			scan = clusterReactiveCommands.scan(scanCursor, ScanArgs.Builder.limit(limit).match("*"));
+		else
+			scan = redisReactiveCommands.scan(scanCursor, ScanArgs.Builder.limit(limit).match("*"));
+
+		KeyScanCursor<String> keyScanCursor = scan.block();
+		Set<String> keys = keyScanCursor.getKeys().stream().map(e->e.replace(CACHE_KEY_APPENDER,"")).collect(Collectors.toSet());
+
+		return new ScanResult(keyScanCursor, keys, this);
+	}
+
+	@Override
 	public List<String> getKeyListByPattern(String keyPattern) {
 		Mono<KeyScanCursor<String>> scan;
 		if (CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(this.cacheConfig.getCachingMode()))
@@ -471,6 +486,30 @@ public class RedisCache<T> implements DataCache<T> {
 	protected void finalize() throws Throwable {
 		super.finalize();
 		closeClient();
+	}
+
+	public static class ScanResult{
+		private KeyScanCursor<String> keyScanCursor;
+		private Set<String> keys;
+		private RedisCache redisCache;
+
+		ScanResult(KeyScanCursor<String> keyScanCursor, Set<String> keys, RedisCache redisCache){
+			this.keys = keys;
+			this.keyScanCursor = keyScanCursor;
+			this.redisCache = redisCache;
+		}
+
+		public Set<String> getKeys() {
+			return keys;
+		}
+
+		public ScanResult getNextResult(int limit){
+			return redisCache.getAllKeys(this.keyScanCursor, limit);
+		}
+
+		public boolean hasNext(){
+			return !keyScanCursor.isFinished();
+		}
 	}
 
 }

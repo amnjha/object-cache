@@ -148,6 +148,15 @@ public interface DataCache<T> {
 	List<String> getAllKeys();
 
 	/**
+	 * Get Keys as a scan iterator
+	 * @param limit the number of keys to get
+	 * @return ScanResult, call scanResult.getNextResult() to get the next results.
+	 */
+	default RedisCache.ScanResult getAllKeys(int limit){
+		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
+	}
+
+	/**
 	 * Get Keys stored in the redis by a given pattern
 	 *
 	 * @param keyPattern

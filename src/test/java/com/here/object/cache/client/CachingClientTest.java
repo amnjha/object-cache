@@ -8,28 +8,20 @@ import com.here.object.cache.config.ObjectCacheClientConfig;
 import com.here.object.cache.config.redis.ServerAddress;
 import com.here.object.cache.data.DataCache;
 import com.here.object.cache.data.RedisCache;
-import io.lettuce.core.KeyScanCursor;
-import io.lettuce.core.RedisURI;
-import io.lettuce.core.ScanArgs;
-import io.lettuce.core.ScanCursor;
-import io.lettuce.core.cluster.RedisClusterClient;
-import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
-import io.lettuce.core.cluster.api.reactive.RedisAdvancedClusterReactiveCommands;
-import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import reactor.core.publisher.Mono;
 import redis.embedded.RedisServer;
 
 import java.lang.reflect.Field;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 
 public class CachingClientTest {
@@ -294,5 +286,19 @@ public class CachingClientTest {
 
 		Assert.assertEquals(value2, cache_1.get(key));
 		Assert.assertNotEquals(value1, cache_1.get(key));
+	}
+
+	@Test
+	public void testKeysScanIteration() {
+		ServerAddress serverAddress = new ServerAddress("localhost", redisServerPort, false, 0);
+		DataCache<String> cache = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
+				.withServerAddress(serverAddress).build();
+
+		IntStream.range(0, 1000).mapToObj(e -> UUID.randomUUID().toString()).forEach(key -> cache.store(key, key));
+		RedisCache.ScanResult scanResult = cache.getAllKeys(100);
+		while(scanResult.hasNext()){
+			System.out.println("Got "+ scanResult.getKeys().size() + " Keys");
+			scanResult = scanResult.getNextResult(100);
+		}
 	}
 }
