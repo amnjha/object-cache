@@ -222,12 +222,7 @@ public class RedisCache<T> implements DataCache<T> {
 		}
 
 		// if not found, look in the remote cache
-		T value;
-		if (CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(this.cacheConfig.getCachingMode())) {
-			value = clusterReactiveCommands.get(CACHE_KEY_APPENDER + key).block();
-		} else {
-			value = redisReactiveCommands.get(CACHE_KEY_APPENDER + key).block();
-		}
+		T value = getFromRemote(key);
 		if (value != null)
 			return value;
 
@@ -294,54 +289,56 @@ public class RedisCache<T> implements DataCache<T> {
 			localCache.deleteIfPresent(key);
 
 		//delete from remote cache as well
-		Long delResponse;
-		if (CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(this.cacheConfig.getCachingMode()))
-			delResponse = clusterReactiveCommands.del(CACHE_KEY_APPENDER + key).block();
-		else
-			delResponse = redisReactiveCommands.del(CACHE_KEY_APPENDER + key).block();
-
+		Long delResponse = deleteByKeys(key);
 		return delResponse != null && delResponse != 0;
 	}
 
 	@Override
-	public List<String> getAllKeys() {
-		Mono<KeyScanCursor<String>> scan;
-		if (CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(this.cacheConfig.getCachingMode()))
-			scan = clusterReactiveCommands.scan(ScanCursor.INITIAL, ScanArgs.Builder.limit(10000000).match("*"));
-		else
-			scan = redisReactiveCommands.scan(ScanCursor.INITIAL, ScanArgs.Builder.limit(10000000).match("*"));
-
-		List<String> keys = scan.block().getKeys();
-		return keys.stream().map(e->e.replace(CACHE_KEY_APPENDER,"")).collect(Collectors.toList());
+	public Set<String> getAllKeys() {
+		return getKeyListByPattern("*");
 	}
+
 
 	@Override
-	public ScanResult getAllKeys(int limit) {
-		return ScanResult.getInitial(this, limit);
-	}
-
-	private ScanResult getAllKeys(ScanCursor scanCursor, int limit){
-		Mono<KeyScanCursor<String>> scan;
-		if (CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(this.cacheConfig.getCachingMode()))
-			scan = clusterReactiveCommands.scan(scanCursor, ScanArgs.Builder.limit(limit).match("*"));
-		else
-			scan = redisReactiveCommands.scan(scanCursor, ScanArgs.Builder.limit(limit).match("*"));
-
-		KeyScanCursor<String> keyScanCursor = scan.block();
-		Set<String> keys = keyScanCursor.getKeys().stream().map(e->e.replace(CACHE_KEY_APPENDER,"")).collect(Collectors.toSet());
-
-		return new ScanResult(keyScanCursor, keys, this, limit);
-	}
-
-	@Override
-	public List<String> getKeyListByPattern(String keyPattern) {
+	public Set<String> getKeyListByPattern(String keyPattern) {
 		Mono<KeyScanCursor<String>> scan;
 		if (CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(this.cacheConfig.getCachingMode()))
 			scan = clusterReactiveCommands.scan(ScanCursor.INITIAL, ScanArgs.Builder.limit(10000000).match(CACHE_KEY_APPENDER + keyPattern + "*"));
 		else
 			scan = redisReactiveCommands.scan(ScanCursor.INITIAL, ScanArgs.Builder.limit(10000000).match(CACHE_KEY_APPENDER + keyPattern + "*"));
-		List<String> keys = scan.block().getKeys();
+		Set<String> keys = scan.block().getKeys().stream().map(e -> e.replace(CACHE_KEY_APPENDER, "")).collect(Collectors.toSet());
 		return keys;
+	}
+
+	@Override
+	public ScanResult scanAllKeys(int limit) {
+		return ScanResult.getInitial(this, limit);
+	}
+
+	@Override
+	public ScanResult scanKeysByPattern(String keyPattern, int limit) {
+		return ScanResult.getInitial(CACHE_KEY_APPENDER + keyPattern + "*", this, limit);
+	}
+
+	private ScanResult scanKeyListByPattern(ScanCursor scanCursor, String keyPattern, int limit) {
+		boolean replacementRequired = !"*".equals(keyPattern);
+
+		Mono<KeyScanCursor<String>> scan;
+		if (CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(this.cacheConfig.getCachingMode()))
+			scan = clusterReactiveCommands.scan(scanCursor, ScanArgs.Builder.limit(limit).match(keyPattern));
+		else
+			scan = redisReactiveCommands.scan(scanCursor, ScanArgs.Builder.limit(limit).match(keyPattern));
+
+		KeyScanCursor<String> keyScanCursor = scan.block();
+		List<String> keys = keyScanCursor.getKeys();
+
+		Set<String> keySet;
+		if (replacementRequired)
+			keySet = keys.stream().map(e -> e.replaceFirst(CACHE_KEY_APPENDER, "")).collect(Collectors.toSet());
+		else
+			keySet = new HashSet<>(keys);
+
+		return new ScanResult(keyScanCursor, keySet, keyPattern, this, limit);
 	}
 
 	/**
@@ -371,10 +368,15 @@ public class RedisCache<T> implements DataCache<T> {
 
 	@Override
 	public long deleteByKeys(String... keys) {
+		String[] keysUpdated = new String[keys.length];
+		for (int i = 0; i < keys.length; i++) {
+			keysUpdated[i] = CACHE_KEY_APPENDER + keys[i];
+		}
+
 		if (CachingMode.CLUSTER_MODE_REDIS_CACHE.equals(this.cacheConfig.getCachingMode()))
-			return clusterReactiveCommands.del(keys).block();
+			return clusterReactiveCommands.del(keysUpdated).block();
 		else
-			return redisReactiveCommands.del(keys).block();
+			return redisReactiveCommands.del(keysUpdated).block();
 	}
 
 	@Override
@@ -488,36 +490,51 @@ public class RedisCache<T> implements DataCache<T> {
 		closeClient();
 	}
 
-	public static class ScanResult{
+	public static class ScanResult {
 		private ScanCursor keyScanCursor;
 		private Set<String> keys;
 		private RedisCache redisCache;
 		private int limit;
+		private String pattern;
 
-		ScanResult(ScanCursor keyScanCursor, Set<String> keys, RedisCache redisCache, int limit){
+		ScanResult(ScanCursor keyScanCursor, Set<String> keys, RedisCache redisCache, int limit) {
 			this.keys = keys;
 			this.keyScanCursor = keyScanCursor;
 			this.redisCache = redisCache;
 			this.limit = limit;
+			this.pattern = "*";
 		}
 
-		static ScanResult getInitial(RedisCache redisCache, int limit){
+		ScanResult(ScanCursor keyScanCursor, Set<String> keys, String pattern, RedisCache redisCache, int limit) {
+			this.keys = keys;
+			this.keyScanCursor = keyScanCursor;
+			this.redisCache = redisCache;
+			this.limit = limit;
+			this.pattern = pattern;
+		}
+
+		static ScanResult getInitial(RedisCache redisCache, int limit) {
 			return new ScanResult(ScanCursor.INITIAL, null, redisCache, limit);
 		}
+
+		static ScanResult getInitial(String pattern, RedisCache redisCache, int limit) {
+			return new ScanResult(ScanCursor.INITIAL, null, pattern, redisCache, limit);
+		}
+
 
 		public Set<String> getKeys() {
 			return keys;
 		}
 
-		public ScanResult getNext(){
-			if(!keyScanCursor.isFinished()) {
-				return redisCache.getAllKeys(this.keyScanCursor, limit);
+		public ScanResult getNext() {
+			if (!keyScanCursor.isFinished()) {
+				return redisCache.scanKeyListByPattern(this.keyScanCursor, this.pattern, this.limit);
 			} else {
 				return new ScanResult(this.keyScanCursor, null, null, limit);
 			}
 		}
 
-		public boolean hasNext(){
+		public boolean hasNext() {
 			return !keyScanCursor.isFinished();
 		}
 	}

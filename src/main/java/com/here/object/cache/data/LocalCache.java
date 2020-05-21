@@ -5,7 +5,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -257,15 +256,15 @@ public class LocalCache<T>  implements DataCache<T>{
 	}
 
 	@Override
-	public List<String> getAllKeys() {
-		List<String> keys = new ArrayList<>();
+	public Set<String> getAllKeys() {
+		Set<String> keys = new HashSet<>();
 		keys.addAll(localCache.asMap().keySet());
 		keys.addAll(collectionLocalCache.asMap().keySet());
 		return keys;
 	}
 
 	@Override
-	public List<String> getKeyListByPattern(String keyPattern) {
+	public Set<String> getKeyListByPattern(String keyPattern) {
 		throw new RuntimeException("Method not supported on local cache");
 	}
 

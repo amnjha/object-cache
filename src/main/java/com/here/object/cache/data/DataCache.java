@@ -145,7 +145,7 @@ public interface DataCache<T> {
 	 *
 	 * @return
 	 */
-	List<String> getAllKeys();
+	Set<String> getAllKeys();
 
 	/**
 	 * Get Keys as a scan iterator
@@ -153,7 +153,7 @@ public interface DataCache<T> {
 	 * @return ScanResult : the scan result pointing to the head of the result,
 	 * 						call scanResult.getNextResult() to get the next results.
 	 */
-	default RedisCache.ScanResult getAllKeys(int limit){
+	default RedisCache.ScanResult scanAllKeys(int limit){
 		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
 	}
 
@@ -163,7 +163,12 @@ public interface DataCache<T> {
 	 * @param keyPattern
 	 * @return
 	 */
-	List<String> getKeyListByPattern(String keyPattern);
+	Set<String> getKeyListByPattern(String keyPattern);
+
+	default RedisCache.ScanResult scanKeysByPattern(String keyPattern, int limit){
+		throw new AbstractMethodError("Method not implemented in the used cache. Method call unexpected");
+	}
+
 
 	/**
 	 * Delete all the values stored in redis with matching key pattern

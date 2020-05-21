@@ -295,10 +295,23 @@ public class CachingClientTest {
 				.withServerAddress(serverAddress).build();
 
 		IntStream.range(0, 1000).mapToObj(e -> UUID.randomUUID().toString()).forEach(key -> cache.store(key, key));
-		RedisCache.ScanResult scanResult = cache.getAllKeys(100);
-		while(scanResult.hasNext()){
-			scanResult = scanResult.getNext();
-			System.out.println("Got "+ scanResult.getKeys().size() + " Keys");
+		IntStream.range(0, 1000).mapToObj(e -> "test" + UUID.randomUUID().toString()).forEach(key -> cache.store(key, key));
+
+		RedisCache.ScanResult scanKeysByPattern = cache.scanKeysByPattern("test", 100);
+		int totalKeys = 0;
+		while(scanKeysByPattern.hasNext()){
+			scanKeysByPattern = scanKeysByPattern.getNext();
+			totalKeys+=scanKeysByPattern.getKeys().size();
 		}
+		Assert.assertEquals(1000, totalKeys);
+
+		RedisCache.ScanResult fullScanResult = cache.scanAllKeys(100);
+		totalKeys = 0;
+		while(fullScanResult.hasNext()){
+			fullScanResult = fullScanResult.getNext();
+			totalKeys+=fullScanResult.getKeys().size();
+		}
+		Assert.assertEquals(2000, totalKeys);
+
 	}
 }
