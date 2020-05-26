@@ -42,8 +42,13 @@ public class ObjectCacheClientConfig {
 	 * @param addresses
 	 */
 	public ObjectCacheClientConfig(ServerAddress... addresses) {
-		cachingMode = CachingMode.STAND_ALONE_REDIS_CACHE;
-		cacheConfig = new RedisCacheConfig(CachingMode.STAND_ALONE_REDIS_CACHE, addresses);
+		if(addresses.length == 0)
+			throw new IllegalArgumentException("Server Addresses cannot be empty");
+		else if(addresses.length == 1)
+			cachingMode = CachingMode.STAND_ALONE_REDIS_CACHE;
+		else
+			cachingMode = CachingMode.CLUSTER_MODE_REDIS_CACHE;
+		cacheConfig = new RedisCacheConfig(cachingMode, addresses);
 	}
 
 	/**
@@ -52,8 +57,14 @@ public class ObjectCacheClientConfig {
 	 * @param addresses
 	 */
 	public ObjectCacheClientConfig(long globalTTL, TimeUnit timeUnit, ServerAddress... addresses) {
-		cachingMode = CachingMode.STAND_ALONE_REDIS_CACHE;
-		cacheConfig = new RedisCacheConfig(CachingMode.STAND_ALONE_REDIS_CACHE, addresses);
+		if(addresses.length == 0)
+			throw new IllegalArgumentException("Server Addresses cannot be empty");
+		else if(addresses.length == 1)
+			cachingMode = CachingMode.STAND_ALONE_REDIS_CACHE;
+		else
+			cachingMode = CachingMode.CLUSTER_MODE_REDIS_CACHE;
+
+		cacheConfig = new RedisCacheConfig(cachingMode, addresses);
 		((RedisCacheConfig) cacheConfig).withTTL(globalTTL, timeUnit);
 	}
 

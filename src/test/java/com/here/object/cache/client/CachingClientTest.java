@@ -31,13 +31,13 @@ public class CachingClientTest {
 	private static RedisServer redisServer;
 
 	@BeforeClass
-	public static void setUp() throws Exception {
-		redisServer = new RedisServer(redisServerPort);
+	public static void setUp() {
+		redisServer = RedisServer.builder().port(redisServerPort).build();
 		redisServer.start();
 	}
 
 	@AfterClass
-	public static void tearDown() throws Exception {
+	public static void tearDown() {
 		redisServer.stop();
 		redisServer = null;
 	}
@@ -289,7 +289,7 @@ public class CachingClientTest {
 	}
 
 	@Test
-	public void testGetAllKeys(){
+	public void testGetAllKeys() {
 		ServerAddress serverAddress = new ServerAddress("localhost", redisServerPort, false, 0);
 		DataCache<String> cache = CacheBuilder.newBuilder().withCachingMode(CachingMode.STAND_ALONE_REDIS_CACHE)
 				.withCacheId("aman-cache").withServerAddress(serverAddress).build();
@@ -324,17 +324,17 @@ public class CachingClientTest {
 
 		RedisCache.ScanResult scanKeysByPattern = cache.scanKeysByPattern("test", 100);
 		int totalKeys = 0;
-		while(scanKeysByPattern.hasNext()){
+		while (scanKeysByPattern.hasNext()) {
 			scanKeysByPattern = scanKeysByPattern.getNext();
-			totalKeys+=scanKeysByPattern.getKeys().size();
+			totalKeys += scanKeysByPattern.getKeys().size();
 		}
 		Assert.assertEquals(1000, totalKeys);
 
 		RedisCache.ScanResult fullScanResult = cache.scanAllKeys(100);
 		totalKeys = 0;
-		while(fullScanResult.hasNext()){
+		while (fullScanResult.hasNext()) {
 			fullScanResult = fullScanResult.getNext();
-			totalKeys+=fullScanResult.getKeys().size();
+			totalKeys += fullScanResult.getKeys().size();
 		}
 		Assert.assertEquals(2000, totalKeys);
 
