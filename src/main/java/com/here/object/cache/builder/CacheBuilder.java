@@ -129,9 +129,9 @@ public class CacheBuilder {
 					throw new InvalidConfigException("Server Adresses not set");
 
 				if (ttlUnit != null && ttl != 0)
-					config = new ObjectCacheClientConfig(ttl, ttlUnit, serverAdresses.toArray(new ServerAddress[0]));
+					config = new ObjectCacheClientConfig(CachingMode.STAND_ALONE_REDIS_CACHE, ttl, ttlUnit, serverAdresses.toArray(new ServerAddress[0]));
 				else
-					config = new ObjectCacheClientConfig(serverAdresses.toArray(new ServerAddress[0]));
+					config = new ObjectCacheClientConfig(CachingMode.STAND_ALONE_REDIS_CACHE, serverAdresses.toArray(new ServerAddress[0]));
 
 				if (serializer != null)
 					config.useRedisCache().withCustomSerializer(serializer);
@@ -146,9 +146,9 @@ public class CacheBuilder {
 				final ServerAddress[] serverAddressesArray = serverAdresses.stream().toArray(ServerAddress[]::new);
 
 				if (ttlUnit != null && ttl != 0)
-					config = new ObjectCacheClientConfig(ttl, ttlUnit, serverAddressesArray);
+					config = new ObjectCacheClientConfig(CachingMode.CLUSTER_MODE_REDIS_CACHE, ttl, ttlUnit, serverAddressesArray);
 				else
-					config = new ObjectCacheClientConfig(serverAddressesArray);
+					config = new ObjectCacheClientConfig(CachingMode.CLUSTER_MODE_REDIS_CACHE, serverAddressesArray);
 
 				if (serializer != null)
 					config.useRedisCache().withCustomSerializer(serializer);

@@ -312,7 +312,7 @@ public class RedisCache<T> implements DataCache<T> {
 
 	@Override
 	public ScanResult scanAllKeys(int limit) {
-		return ScanResult.getInitial( "*", this, limit);
+		return ScanResult.getInitial( CACHE_KEY_APPENDER + "*", this, limit);
 	}
 
 	@Override
