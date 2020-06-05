@@ -161,11 +161,10 @@ public class RedisCache<T> implements DataCache<T> {
 			RedisAsyncCommands<String, T> commands = connection.async();
 			commands.setAutoFlushCommands(false);
 			List<RedisFuture<?>> futures = Lists.newArrayList();
-			dataToInsert.entrySet()
-					.parallelStream()
-					.forEach(entry -> {
-						futures.add(commands.set(CACHE_KEY_APPENDER + entry.getKey(), entry.getValue()));
-					});
+			for (Map.Entry<String, T> entry : dataToInsert.entrySet()) {
+				RedisFuture<String> future = commands.set(CACHE_KEY_APPENDER + entry.getKey(), entry.getValue());
+				futures.add(future);
+			}
 			commands.flushCommands();
 			boolean result = LettuceFutures.awaitAll(timeout, timeUnit, futures.toArray(new RedisFuture[futures.size()]));
 			connection.close();
