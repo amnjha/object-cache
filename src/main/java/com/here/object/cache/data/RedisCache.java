@@ -164,7 +164,7 @@ public class RedisCache<T> implements DataCache<T> {
 			dataToInsert.entrySet()
 					.parallelStream()
 					.forEach(entry -> {
-						commands.set(CACHE_KEY_APPENDER + entry.getKey(), entry.getValue());
+						futures.add(commands.set(CACHE_KEY_APPENDER + entry.getKey(), entry.getValue()));
 					});
 			commands.flushCommands();
 			boolean result = LettuceFutures.awaitAll(timeout, timeUnit, futures.toArray(new RedisFuture[futures.size()]));
