@@ -2,7 +2,7 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>com.here</groupId>
+	<groupId>io.github.amnjha</groupId>
 	<artifactId>object-cache</artifactId>
 	<version>3.0.7-LETTUCE</version>
 	<name>Object Cache</name>
@@ -13,20 +13,6 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
-
-
-	<distributionManagement>
-		<repository>
-			<id>central</id>
-			<name>HEREArtifactory-releases</name>
-			<url>https://artifactory.in.here.com/artifactory/cme-content-tools-virtual</url>
-		</repository>
-		<snapshotRepository>
-			<id>snapshots</id>
-			<name>HEREArtifactory-snapshots</name>
-			<url>https://artifactory.in.here.com/artifactory/cme-content-tools-virtual</url>
-		</snapshotRepository>
-	</distributionManagement>
 
 	<dependencies>
 

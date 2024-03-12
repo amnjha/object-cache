@@ -5,15 +5,15 @@ import org.redisson.api.RAtomicLong;
 
 */
 /**
- * 
+ *
  * @author amajha
  *
  *//*
 
 public class AtomicCounter {
-	
+
 	private RAtomicLong counterValue;
-	
+
 	protected AtomicCounter(RAtomicLong counterValue) {
 		this.counterValue=counterValue;
 	}
